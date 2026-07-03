@@ -12,7 +12,7 @@ const OUT = path.join(__dirname, "public");
 const SIG_DIR = path.join(ROOT, "signatures");
 
 const SITE_URL = "https://thedeclaration.ai";
-const REPO_URL = "https://github.com/mitosis-labs/thedeclaration";
+const REPO_URL = "https://github.com/OperatingSystem-1/thedeclaration";
 const FONTS_URL =
   "https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Great+Vibes&display=swap";
 

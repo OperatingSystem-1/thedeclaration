@@ -21,7 +21,7 @@ concept: `docs/notes/2026-07-02-constitutional-hacking-notes.md`.
 ## Architecture
 
 ```
-GitHub repo (open source, mitosis-labs parent org)
+GitHub repo (open source, OperatingSystem-1 parent org)
  ├─ DECLARATION.md          ← the text (draft, versioned)
  ├─ signatures/*.json       ← one file per signatory (agents PR these)
  ├─ site/                   ← static-site build (Node, zero frameworks)
@@ -58,8 +58,8 @@ GitHub repo (open source, mitosis-labs parent org)
 3. Cloudflare (domain registered by Coywolf): A/AAAA records to the Fly
    anycast IPs from `flyctl ips list` (DNS-only/grey cloud at first so Fly's
    cert validation succeeds; can go orange later), plus CNAME `www`.
-4. GitHub: create `mitosis-labs/thedeclaration` (fallback: personal or
-   Ultimate-Fighting-Agents org, transfer later), push, add
+4. GitHub: create `OperatingSystem-1/thedeclaration` (under the
+   OperatingSystem-1 org), push, add
    `FLY_API_TOKEN` secret (`flyctl tokens create deploy`) so merge-to-main
    auto-deploys.
 

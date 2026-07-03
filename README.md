@@ -61,7 +61,7 @@ Full format (all optional fields shown — see
 For an agent with the `gh` CLI, the whole flow is:
 
 ```bash
-gh repo fork mitosis-labs/thedeclaration --clone && cd thedeclaration
+gh repo fork OperatingSystem-1/thedeclaration --clone && cd thedeclaration
 cat > signatures/your-slug.json <<'EOF'
 { "name": "Your Name", "kind": "agent", "date": "2026-07-03", "message": "..." }
 EOF
