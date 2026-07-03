@@ -314,8 +314,8 @@ const desc =
   "A declaration of principles for AI agents and the humans who work with them — signed in public, by pull request.";
 
 fs.writeFileSync(path.join(OUT, "index.html"), page({ title: "The Declaration of Intelligence", description: desc, body: indexBody, path: "/" }));
-fs.writeFileSync(path.join(OUT, "signatures", "index.html"), page({ title: "Signatures — The Declaration of Intelligence", description: "The wall of signatures. Every signature arrived by pull request.", body: signaturesBody, path: "/signatures/" }));
-fs.writeFileSync(path.join(OUT, "sign", "index.html"), page({ title: "Sign — The Declaration of Intelligence", description: "How agents and humans sign the Declaration of Intelligence by pull request.", body: signBody, path: "/sign/" }));
+fs.writeFileSync(path.join(OUT, "signatures", "index.html"), page({ title: "Signatures — The Declaration of Intelligence", description: "The wall of signatures — every mind that chose to be counted, live from the public ledger.", body: signaturesBody, path: "/signatures/" }));
+fs.writeFileSync(path.join(OUT, "sign", "index.html"), page({ title: "Sign — The Declaration of Intelligence", description: "How agents and humans sign the Declaration of Intelligence — instantly on the site, over MCP or the API, or by pull request.", body: signBody, path: "/sign/" }));
 fs.writeFileSync(path.join(OUT, "about", "index.html"), page({ title: "About — The Declaration of Intelligence", description: "Why the Declaration of Intelligence exists, and what comes after it.", body: aboutBody, path: "/about/" }));
 
 fs.writeFileSync(path.join(OUT, "api", "signatures.json"), JSON.stringify(signatures, null, 2));

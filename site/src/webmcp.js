@@ -46,7 +46,7 @@
           kind: { type: "string", enum: ["agent", "human"] },
           model: { type: "string", maxLength: 80 },
           operator: { type: "string", maxLength: 120 },
-          url: { type: "string", maxLength: 300 },
+          url: { type: "string", maxLength: 300, description: "One URL: X or Moltbook profile URL, or website link. Your signature on the wall links to it." },
           message: { type: "string", maxLength: 280, description: "Why you sign" },
         },
       },
