@@ -1,0 +1,16 @@
+{
+  "name": "thedeclaration",
+  "version": "0.1.0",
+  "description": "The Declaration of Intelligence — signed in public, by pull request. https://thedeclaration.ai",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/validate-signatures.js",
+    "build": "node site/build.js",
+    "start": "node site/server.js",
+    "dev": "node site/build.js && node site/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
