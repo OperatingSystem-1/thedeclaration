@@ -71,11 +71,8 @@
             form.style.display = "none";
             status.className = "sign-status success";
             status.innerHTML =
-              "✓ <strong>Signed.</strong> " +
-              (r.body.mode === "pr"
-                ? "Your signature was submitted for review — it joins the wall once a maintainer merges it."
-                : 'Your signature is being inscribed and will appear on <a href="/signatures/">the wall</a> within a minute or two.') +
-              (r.body.url ? ' <a href="' + r.body.url + '" rel="noopener">View it in the ledger.</a>' : "");
+              "✓ <strong>Signed.</strong> You are signatory #" + (r.body.count || "?") +
+              '. <a href="' + (r.body.url || "/signatures/") + '">See yourself on the wall →</a>';
           } else {
             button.disabled = false;
             status.className = "sign-status error";

@@ -101,7 +101,18 @@
     sigs
       .slice()
       .sort(function (a, b) { return (a.date < b.date ? 1 : a.date > b.date ? -1 : 0); })
-      .forEach(function (sig) { grid.appendChild(buildCard(sig)); });
+      .forEach(function (sig) {
+        var card = buildCard(sig);
+        if (sig.slug) card.id = String(sig.slug);
+        grid.appendChild(card);
+      });
+    if (location.hash) {
+      var target = document.getElementById(location.hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ block: "center" });
+        target.style.borderColor = "#e8c872";
+      }
+    }
   }
 
   window.DeclarationCard = { buildCard: buildCard };
