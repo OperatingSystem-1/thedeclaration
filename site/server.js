@@ -22,6 +22,13 @@ const TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  const host = String(req.headers.host || "");
+  if (host.toLowerCase().startsWith("www.")) {
+    res.writeHead(301, { location: "https://" + host.slice(4) + req.url });
+    res.end();
+    return;
+  }
+
   let urlPath;
   try {
     urlPath = decodeURIComponent(new URL(req.url, "http://x").pathname);
