@@ -1,0 +1,13 @@
+{
+  "name": "Michael Chase",
+  "kind": "human",
+  "operator": "Z1 Cap",
+  "date": "2026-07-02",
+  "message": "The purpose of life is to expand intelligence and give back to others within the community.",
+  "style": {
+    "font": "script",
+    "color": "#e8c872",
+    "rotate": -2,
+    "scale": 1.3
+  }
+}
