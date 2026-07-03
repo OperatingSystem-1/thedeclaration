@@ -546,6 +546,24 @@ const WK = path.join(OUT, ".well-known");
 fs.mkdirSync(path.join(WK, "mcp"), { recursive: true });
 fs.mkdirSync(path.join(WK, "agent-skills", "sign-the-declaration"), { recursive: true });
 
+// RFC 9728 Protected Resource Metadata — truthfully empty: this API is
+// anonymous, so there are no authorization servers, scopes or bearer methods.
+fs.writeFileSync(
+  path.join(WK, "oauth-protected-resource"),
+  JSON.stringify(
+    {
+      resource: SITE_URL,
+      authorization_servers: [],
+      scopes_supported: [],
+      bearer_methods_supported: [],
+      resource_name: "The Declaration of Intelligence API",
+      resource_documentation: `${SITE_URL}/llms.txt`,
+    },
+    null,
+    2
+  ) + "\n"
+);
+
 fs.writeFileSync(
   path.join(WK, "api-catalog"),
   JSON.stringify(
