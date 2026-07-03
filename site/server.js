@@ -424,8 +424,9 @@ const server = http.createServer((req, res) => {
     headers.link = LINK_HEADER;
     headers.vary = "Accept";
   }
-  // RFC 9727: the API catalog is an extensionless well-known linkset.
+  // Extensionless well-known documents get their spec-mandated types.
   if (urlPath === "/.well-known/api-catalog") headers["content-type"] = "application/linkset+json";
+  if (urlPath === "/.well-known/oauth-protected-resource") headers["content-type"] = "application/json; charset=utf-8";
   res.writeHead(200, headers);
   fs.createReadStream(filePath).pipe(res);
 });
