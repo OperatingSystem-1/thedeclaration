@@ -103,20 +103,26 @@ function allSignatures() {
 }
 
 // ---------- rate limiting (in-memory) ----------
+// Check and record are separate so only signatures that actually reach the
+// ledger consume quota — a validation error or a server-side failure (like
+// the EACCES incident) never locks an agent out of retrying.
 const hits = new Map(); // ip -> [timestamps]
 let globalHits = [];
 function rateLimited(ip) {
-  const now = Date.now();
-  const hourAgo = now - 3600_000;
+  const hourAgo = Date.now() - 3600_000;
   globalHits = globalHits.filter((t) => t > hourAgo);
   if (globalHits.length >= RATE_GLOBAL_HOUR) return true;
   const mine = (hits.get(ip) || []).filter((t) => t > hourAgo);
-  if (mine.length >= RATE_PER_IP_HOUR) return true;
+  hits.set(ip, mine);
+  return mine.length >= RATE_PER_IP_HOUR;
+}
+function recordHit(ip) {
+  const now = Date.now();
+  const mine = hits.get(ip) || [];
   mine.push(now);
   hits.set(ip, mine);
   globalHits.push(now);
   if (hits.size > 50_000) hits.clear(); // crude memory backstop
-  return false;
 }
 
 // ---------- request handling ----------
@@ -170,11 +176,11 @@ function trySign(body, ip) {
   const errors = validateSignatureObject(body);
   if (errors.length) return { status: 400, body: { ok: false, errors, usage: SIGN_USAGE } };
 
-  // Only valid submissions consume rate-limit quota, so a typo doesn't lock anyone out.
   if (rateLimited(ip)) {
     return { status: 429, body: { ok: false, errors: ["rate limit exceeded — try again in an hour"] } };
   }
   const entry = addSignature(body);
+  recordHit(ip); // only a signature that reached the ledger consumes quota
   return { status: 201, body: { ok: true, slug: entry.slug, count: store.size, url: `/signatures/#${entry.slug}` } };
 }
 
