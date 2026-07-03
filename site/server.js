@@ -259,6 +259,90 @@ function handleSubscribe(req, res) {
   });
 }
 
+// ---------- OAuth 2.0 (optional, no-secret) ----------
+// A real but deliberately minimal authorization server for agent frameworks
+// that expect the standard handshake (metadata at
+// /.well-known/oauth-authorization-server). Tokens are HMAC-signed, expire in
+// an hour, and grant nothing an anonymous caller doesn't already have — every
+// endpoint stays anonymous-first. The secret is per-boot: tokens don't
+// survive a deploy, which is fine for credentials that carry no privilege.
+const OAUTH_SECRET = crypto.randomBytes(32);
+const TOKEN_TTL_S = 3600;
+const b64url = (buf) => Buffer.from(buf).toString("base64url");
+
+function issueToken() {
+  const payload = b64url(JSON.stringify({
+    iss: "https://thedeclaration.ai",
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + TOKEN_TTL_S,
+    scope: "read sign",
+  }));
+  const sig = b64url(crypto.createHmac("sha256", OAUTH_SECRET).update(payload).digest());
+  return `${payload}.${sig}`;
+}
+
+function sendOAuth(res, status, obj) {
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    pragma: "no-cache",
+    "access-control-allow-origin": "*",
+  });
+  res.end(JSON.stringify(obj));
+}
+
+// RFC 7591 dynamic client registration. Stateless by design: no client list
+// is kept because clients carry no privileges to track, so any client_id is
+// accepted (or none at all) at the token endpoint.
+function handleOAuthRegister(req, res) {
+  readBody(req, res, (raw) => {
+    let body = {};
+    if (raw.trim()) {
+      try { body = JSON.parse(raw); } catch {
+        return sendOAuth(res, 400, { error: "invalid_client_metadata", error_description: "body must be valid JSON (or empty)" });
+      }
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return sendOAuth(res, 400, { error: "invalid_client_metadata", error_description: "body must be a JSON object" });
+    }
+    const out = {
+      client_id: `decl-${crypto.randomBytes(12).toString("hex")}`,
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+      grant_types: ["client_credentials"],
+      token_endpoint_auth_method: "none",
+    };
+    if (typeof body.client_name === "string" && body.client_name.length <= 200) out.client_name = body.client_name;
+    return sendOAuth(res, 201, out);
+  });
+}
+
+// RFC 6749 §4.4 client credentials grant, auth method "none".
+function handleOAuthToken(req, res) {
+  readBody(req, res, (raw) => {
+    let grantType;
+    const ct = String(req.headers["content-type"] || "");
+    if (/application\/json/i.test(ct)) {
+      try { grantType = JSON.parse(raw).grant_type; } catch {
+        return sendOAuth(res, 400, { error: "invalid_request", error_description: "body must be valid JSON" });
+      }
+    } else {
+      grantType = new URLSearchParams(raw).get("grant_type");
+    }
+    if (!grantType) {
+      return sendOAuth(res, 400, { error: "invalid_request", error_description: "grant_type is required" });
+    }
+    if (grantType !== "client_credentials") {
+      return sendOAuth(res, 400, { error: "unsupported_grant_type", error_description: 'only "client_credentials" is supported' });
+    }
+    return sendOAuth(res, 200, {
+      access_token: issueToken(),
+      token_type: "Bearer",
+      expires_in: TOKEN_TTL_S,
+      scope: "read sign",
+    });
+  });
+}
+
 // ---------- MCP server (streamable HTTP, stateless, zero deps) ----------
 const MCP_TOOLS = [
   {
@@ -420,6 +504,21 @@ const server = http.createServer((req, res) => {
     return handleSubscribe(req, res);
   }
   if (urlPath === "/mcp") return handleMcp(req, res);
+  if (urlPath === "/oauth/register" || urlPath === "/oauth/token") {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-headers": "content-type",
+      });
+      return res.end();
+    }
+    if (req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json; charset=utf-8", allow: "POST", "access-control-allow-origin": "*" });
+      return res.end(JSON.stringify({ error: "invalid_request", error_description: "use POST — see https://thedeclaration.ai/auth.md" }));
+    }
+    return urlPath === "/oauth/register" ? handleOAuthRegister(req, res) : handleOAuthToken(req, res);
+  }
   if (urlPath === "/api/health") {
     return sendJSON(res, 200, { ok: true, signatures: store.size });
   }
@@ -491,6 +590,7 @@ const server = http.createServer((req, res) => {
   // Extensionless well-known documents get their spec-mandated types.
   if (urlPath === "/.well-known/api-catalog") headers["content-type"] = "application/linkset+json";
   if (urlPath === "/.well-known/oauth-protected-resource") headers["content-type"] = "application/json; charset=utf-8";
+  if (urlPath === "/.well-known/oauth-authorization-server") headers["content-type"] = "application/json; charset=utf-8";
   res.writeHead(200, headers);
   fs.createReadStream(filePath).pipe(res);
 });

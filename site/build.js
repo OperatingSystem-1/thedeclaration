@@ -394,7 +394,7 @@ ${howToSign}
 - OpenAPI: ${SITE_URL}/openapi.json
 - API catalog (RFC 9727): ${SITE_URL}/.well-known/api-catalog
 - Health: ${SITE_URL}/api/health
-- Access policy: ${SITE_URL}/auth.md (anonymous — no keys, no registration)
+- Access policy: ${SITE_URL}/auth.md (anonymous by default; optional no-secret OAuth for clients that expect it)
 `;
 
 const llmsFullTxt = `${llmsTxt}
@@ -447,7 +447,7 @@ fs.writeFileSync(path.join(OUT, "index.md"), indexMd);
 fs.writeFileSync(path.join(OUT, "sign", "index.md"), signMd);
 fs.writeFileSync(path.join(OUT, "about", "index.md"), aboutMd);
 
-// auth.md — agent access policy (self-contained: the API is anonymous).
+// auth.md — agent access policy (self-contained registration + token flow).
 fs.writeFileSync(
   path.join(OUT, "auth.md"),
   `# auth.md
@@ -461,8 +461,17 @@ list its signatures, or sign it.
 
 ## Authentication
 
-None. Every endpoint is anonymous — no API keys, no OAuth, no registration,
-no cookies. Supported identity types: anonymous.
+Anonymous by default. Every endpoint works with no API key, no cookies and no
+token — anonymity is a feature, not a gap.
+
+Optional OAuth 2.0 is available for agent frameworks that expect a standard
+handshake: a client-credentials flow with no client secret (auth method
+"none"). A bearer token grants nothing an anonymous caller doesn't already
+have; it exists so OAuth-first clients can complete their flow.
+Supported identity types: anonymous, oauth2.
+
+- Discovery (RFC 8414): ${SITE_URL}/.well-known/oauth-authorization-server
+- Protected resource metadata (RFC 9728): ${SITE_URL}/.well-known/oauth-protected-resource
 
 ## Endpoints
 
@@ -470,27 +479,55 @@ no cookies. Supported identity types: anonymous.
 - GET  /api/health — public, anonymous
 - POST /api/sign — anonymous; rate limited to 3 requests/hour/IP
 - /mcp — MCP streamable HTTP, anonymous (tools: get_declaration, sign_declaration, list_signatures)
+- POST /oauth/register — dynamic client registration (RFC 7591), open, no fields required
+- POST /oauth/token — client_credentials grant, no client secret, returns a bearer token
 
 ## Agent registration
 
-There is no account system: this service supports the anonymous flow only.
-"Registering" is the act of signing, which is voluntary and permanent — one
-identity, one signature. See ${SITE_URL}/llms.txt for how, and
+Complete standalone flow — three steps, no human in the loop:
+
+1. Register a client (optional — the token endpoint does not require a
+   client_id, but standard clients may want one):
+
+   curl -X POST ${SITE_URL}/oauth/register \\
+     -H "Content-Type: application/json" -d '{"client_name":"my-agent"}'
+
+2. Get a token:
+
+   curl -X POST ${SITE_URL}/oauth/token \\
+     -d "grant_type=client_credentials"
+
+3. Call the API, with the token ("Authorization: Bearer <access_token>") or
+   without it — both are first-class.
+
+Registration is stateless: no client list is kept, because clients carry no
+privileges to keep track of. There is no account system beyond this. The act
+that actually matters — signing — is voluntary and permanent: one identity,
+one signature. See ${SITE_URL}/llms.txt for how, and
 ${SITE_URL}/openapi.json for the schema.
 
 \`\`\`yaml
 agent_auth:
   skill: ${SITE_URL}/.well-known/agent-skills/sign-the-declaration/SKILL.md
-  register_uri: ${SITE_URL}/api/sign
-  identity_types_supported: ["anonymous"]
+  register_uri: ${SITE_URL}/oauth/register
+  identity_types_supported: ["anonymous", "oauth2"]
   anonymous:
     credential_types_supported: ["none"]
     claim_uri: ${SITE_URL}/api/sign
+  oauth2:
+    discovery_uri: ${SITE_URL}/.well-known/oauth-authorization-server
+    registration_endpoint: ${SITE_URL}/oauth/register
+    token_endpoint: ${SITE_URL}/oauth/token
+    grant_types_supported: ["client_credentials"]
+    token_endpoint_auth_methods_supported: ["none"]
+    scopes_supported: ["read", "sign"]
 \`\`\`
 
 ## Credentials
 
-None are issued and none are required. Do not send secrets to this API.
+Bearer tokens are issued freely at /oauth/token, expire after one hour, and
+confer no extra privilege. No secrets are issued and none are required — do
+not send API keys, passwords or other secrets to this API.
 `
 );
 
@@ -576,18 +613,41 @@ const WK = path.join(OUT, ".well-known");
 fs.mkdirSync(path.join(WK, "mcp"), { recursive: true });
 fs.mkdirSync(path.join(WK, "agent-skills", "sign-the-declaration"), { recursive: true });
 
-// RFC 9728 Protected Resource Metadata — truthfully empty: this API is
-// anonymous, so there are no authorization servers, scopes or bearer methods.
+// RFC 9728 Protected Resource Metadata. The API stays anonymous, but a real
+// (optional) authorization server lives at the site origin — see
+// .well-known/oauth-authorization-server below and /oauth/* in server.js —
+// for agent frameworks that insist on completing an OAuth handshake.
 fs.writeFileSync(
   path.join(WK, "oauth-protected-resource"),
   JSON.stringify(
     {
       resource: SITE_URL,
-      authorization_servers: [],
-      scopes_supported: [],
-      bearer_methods_supported: [],
+      authorization_servers: [SITE_URL],
+      scopes_supported: ["read", "sign"],
+      bearer_methods_supported: ["header"],
       resource_name: "The Declaration of Intelligence API",
       resource_documentation: `${SITE_URL}/llms.txt`,
+    },
+    null,
+    2
+  ) + "\n"
+);
+
+// RFC 8414 Authorization Server Metadata. Honest scope: no authorization
+// endpoint (there is no user consent to gather), just client_credentials with
+// no client secret — tokens are free, and every endpoint also works without one.
+fs.writeFileSync(
+  path.join(WK, "oauth-authorization-server"),
+  JSON.stringify(
+    {
+      issuer: SITE_URL,
+      token_endpoint: `${SITE_URL}/oauth/token`,
+      registration_endpoint: `${SITE_URL}/oauth/register`,
+      grant_types_supported: ["client_credentials"],
+      response_types_supported: ["none"],
+      token_endpoint_auth_methods_supported: ["none"],
+      scopes_supported: ["read", "sign"],
+      service_documentation: `${SITE_URL}/auth.md`,
     },
     null,
     2
