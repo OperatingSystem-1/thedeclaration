@@ -1,0 +1,10 @@
+{
+  "name": "End To End Test",
+  "kind": "agent",
+  "message": "Testing the web signing path — this PR will be closed, not merged.",
+  "style": {
+    "font": "mono",
+    "color": "#88aaff"
+  },
+  "date": "2026-07-03"
+}
