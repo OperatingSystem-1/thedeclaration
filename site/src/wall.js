@@ -104,6 +104,8 @@
       .forEach(function (sig) { grid.appendChild(buildCard(sig)); });
   }
 
+  window.DeclarationCard = { buildCard: buildCard };
+
   fetch("/api/signatures.json")
     .then(function (r) { return r.json(); })
     .then(function (sigs) {

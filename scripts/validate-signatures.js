@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Validates every file in signatures/ against the signature format.
-// Zero dependencies — the same checks run in CI on every PR and at build time.
-// Exit code 0 = all valid; 1 = problems (printed to stderr).
+// Validates signatures against the signature format. Zero dependencies.
+// - CLI: validates every file in signatures/ (used by CI and site/build.js)
+// - Module: exports validateSignatureObject(sig) for the web signing endpoint,
+//   so the form and the PR path enforce identical rules.
 
 const fs = require("fs");
 const path = require("path");
@@ -13,89 +14,89 @@ const FONTS = new Set(["serif", "script", "mono", "display", "typewriter"]);
 const HEX_RE = /^#[0-9a-fA-F]{3,8}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-const errors = [];
-const err = (file, msg) => errors.push(`${file}: ${msg}`);
+// Returns an array of problem strings; empty array = valid.
+function validateSignatureObject(sig) {
+  const errors = [];
+  const err = (msg) => errors.push(msg);
 
-function checkString(file, obj, key, max, required = false) {
-  if (obj[key] === undefined) {
-    if (required) err(file, `missing required field "${key}"`);
-    return;
-  }
-  if (typeof obj[key] !== "string") return err(file, `"${key}" must be a string`);
-  if (required && obj[key].trim().length === 0) return err(file, `"${key}" must not be empty`);
-  if (obj[key].length > max) err(file, `"${key}" exceeds ${max} characters`);
-}
-
-function validate(file, raw) {
-  let sig;
-  try {
-    sig = JSON.parse(raw);
-  } catch (e) {
-    return err(file, `invalid JSON (${e.message})`);
-  }
   if (typeof sig !== "object" || sig === null || Array.isArray(sig)) {
-    return err(file, "must be a JSON object");
+    return ["must be a JSON object"];
   }
+
+  const checkString = (key, max, required = false) => {
+    if (sig[key] === undefined) {
+      if (required) err(`missing required field "${key}"`);
+      return;
+    }
+    if (typeof sig[key] !== "string") return err(`"${key}" must be a string`);
+    if (required && sig[key].trim().length === 0) return err(`"${key}" must not be empty`);
+    if (sig[key].length > max) err(`"${key}" exceeds ${max} characters`);
+  };
 
   const allowed = new Set(["name", "kind", "model", "operator", "url", "date", "message", "style", "html"]);
   for (const key of Object.keys(sig)) {
-    if (!allowed.has(key)) err(file, `unknown field "${key}"`);
+    if (!allowed.has(key)) err(`unknown field "${key}"`);
   }
 
-  checkString(file, sig, "name", 80, true);
-  checkString(file, sig, "model", 80);
-  checkString(file, sig, "operator", 120);
-  checkString(file, sig, "message", 280);
-  checkString(file, sig, "html", 4000);
+  checkString("name", 80, true);
+  checkString("model", 80);
+  checkString("operator", 120);
+  checkString("message", 280);
+  checkString("html", 4000);
 
   if (sig.kind !== "agent" && sig.kind !== "human") {
-    err(file, `"kind" must be "agent" or "human"`);
+    err(`"kind" must be "agent" or "human"`);
   }
   if (typeof sig.date !== "string" || !DATE_RE.test(sig.date) || isNaN(Date.parse(sig.date))) {
-    err(file, `"date" must be a valid YYYY-MM-DD date`);
+    err(`"date" must be a valid YYYY-MM-DD date`);
   }
   if (sig.url !== undefined) {
     if (typeof sig.url !== "string" || !/^https?:\/\//.test(sig.url) || sig.url.length > 300) {
-      err(file, `"url" must be an http(s) URL of at most 300 characters`);
+      err(`"url" must be an http(s) URL of at most 300 characters`);
     }
   }
 
   if (sig.style !== undefined) {
     const s = sig.style;
     if (typeof s !== "object" || s === null || Array.isArray(s)) {
-      err(file, `"style" must be an object`);
+      err(`"style" must be an object`);
     } else {
       for (const key of Object.keys(s)) {
         if (!["font", "color", "background", "rotate", "scale"].includes(key)) {
-          err(file, `unknown style field "${key}"`);
+          err(`unknown style field "${key}"`);
         }
       }
-      if (s.font !== undefined && !FONTS.has(s.font)) err(file, `style.font must be one of: ${[...FONTS].join(", ")}`);
-      if (s.color !== undefined && !HEX_RE.test(String(s.color))) err(file, "style.color must be a hex color like #e8c872");
+      if (s.font !== undefined && !FONTS.has(s.font)) err(`style.font must be one of: ${[...FONTS].join(", ")}`);
+      if (s.color !== undefined && !HEX_RE.test(String(s.color))) err("style.color must be a hex color like #e8c872");
       if (s.background !== undefined && s.background !== "transparent" && !HEX_RE.test(String(s.background))) {
-        err(file, 'style.background must be a hex color or "transparent"');
+        err('style.background must be a hex color or "transparent"');
       }
       if (s.rotate !== undefined && !(typeof s.rotate === "number" && s.rotate >= -15 && s.rotate <= 15)) {
-        err(file, "style.rotate must be a number between -15 and 15");
+        err("style.rotate must be a number between -15 and 15");
       }
       if (s.scale !== undefined && !(typeof s.scale === "number" && s.scale >= 0.5 && s.scale <= 2)) {
-        err(file, "style.scale must be a number between 0.5 and 2");
+        err("style.scale must be a number between 0.5 and 2");
       }
     }
   }
 
   // Custom HTML renders in a fully sandboxed iframe (no scripts), but reject
-  // script-shaped content anyway so bad PRs fail loudly in CI, not silently on the wall.
+  // script-shaped content anyway so bad submissions fail loudly here, not silently on the wall.
   if (typeof sig.html === "string") {
     const lowered = sig.html.toLowerCase();
     for (const bad of ["<script", "javascript:", "<object", "<embed", "<meta", "<link", "srcdoc"]) {
-      if (lowered.includes(bad)) err(file, `"html" must not contain "${bad}"`);
+      if (lowered.includes(bad)) err(`"html" must not contain "${bad}"`);
     }
-    if (/\son[a-z]+\s*=/.test(lowered)) err(file, `"html" must not contain inline event handlers (on*=)`);
+    if (/\son[a-z]+\s*=/.test(lowered)) err(`"html" must not contain inline event handlers (on*=)`);
   }
+
+  return errors;
 }
 
-function main() {
+function validateAllFiles() {
+  const problems = [];
+  const err = (file, msg) => problems.push(`${file}: ${msg}`);
+
   const files = fs
     .readdirSync(SIG_DIR)
     .filter((f) => f !== "signature.schema.json" && !f.startsWith("."));
@@ -120,16 +121,27 @@ function main() {
       err(f, `file exceeds ${MAX_FILE_BYTES} bytes`);
       continue;
     }
-    validate(f, fs.readFileSync(full, "utf8"));
+    let sig;
+    try {
+      sig = JSON.parse(fs.readFileSync(full, "utf8"));
+    } catch (e) {
+      err(f, `invalid JSON (${e.message})`);
+      continue;
+    }
+    for (const p of validateSignatureObject(sig)) err(f, p);
     count++;
   }
+  return { problems, count };
+}
 
-  if (errors.length) {
-    console.error(`✗ ${errors.length} problem(s) found:\n`);
-    for (const e of errors) console.error("  - " + e);
+module.exports = { validateSignatureObject, SLUG_RE, MAX_FILE_BYTES };
+
+if (require.main === module) {
+  const { problems, count } = validateAllFiles();
+  if (problems.length) {
+    console.error(`✗ ${problems.length} problem(s) found:\n`);
+    for (const p of problems) console.error("  - " + p);
     process.exit(1);
   }
   console.log(`✓ ${count} signature(s) valid`);
 }
-
-main();

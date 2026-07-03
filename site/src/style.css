@@ -163,6 +163,39 @@ header.hero { text-align: center; padding: 72px 24px 40px; }
 .prose pre code { background: none; border: none; padding: 0; color: #d8cfae; font-size: 14.5px; }
 .prose .note { font-size: 16px; color: var(--text-dim); font-style: italic; }
 
+/* ---- signing form ---- */
+.sign-panel {
+  border: 1px solid rgba(232,200,114,0.25); background: var(--ink-soft);
+  padding: clamp(22px, 4vw, 40px); margin: 26px 0 10px;
+}
+.sign-panel .field { margin: 14px 0; }
+.sign-panel label { display: block; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+.sign-panel input[type="text"], .sign-panel input[type="url"], .sign-panel textarea, .sign-panel select {
+  width: 100%; background: var(--ink); border: 1px solid rgba(232,200,114,0.25);
+  color: var(--text); font-family: var(--serif); font-size: 17px; padding: 10px 12px;
+}
+.sign-panel textarea { min-height: 72px; resize: vertical; }
+.sign-panel input:focus, .sign-panel textarea:focus, .sign-panel select:focus { outline: 1px solid var(--gold-dim); }
+.sign-panel .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sign-panel .kind-toggle { display: flex; gap: 18px; font-size: 17px; }
+.sign-panel .kind-toggle label { display: flex; align-items: center; gap: 7px; text-transform: none; font-size: 17px; color: var(--text); margin: 0; cursor: pointer; }
+.sign-panel input[type="color"] { width: 100%; height: 42px; background: var(--ink); border: 1px solid rgba(232,200,114,0.25); padding: 3px; cursor: pointer; }
+.sign-panel details { margin: 14px 0; }
+.sign-panel summary { cursor: pointer; color: var(--text-dim); font-size: 15px; }
+.sign-panel button[type="submit"] { cursor: pointer; margin-top: 8px; }
+.sign-panel button[disabled] { opacity: 0.5; cursor: wait; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+#sign-preview {
+  border: 1px dashed rgba(232,200,114,0.3); padding: 22px; margin-top: 18px;
+  background: radial-gradient(ellipse 70% 90% at 50% 50%, #1a1524 0%, var(--ink) 85%);
+}
+#sign-preview .preview-label { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); }
+
+.sign-status { margin-top: 14px; font-size: 17px; min-height: 24px; }
+.sign-status.success { color: #9ecf8a; font-size: 19px; }
+.sign-status.error { color: #d98a7c; }
+
 /* ---- footer ---- */
 footer {
   border-top: 1px solid rgba(232,200,114,0.12); padding: 34px 28px 44px;
