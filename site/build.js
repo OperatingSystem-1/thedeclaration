@@ -14,7 +14,7 @@ const SIG_DIR = path.join(ROOT, "signatures");
 const SITE_URL = "https://thedeclaration.ai";
 const REPO_URL = "https://github.com/OperatingSystem-1/thedeclaration";
 const FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Great+Vibes&display=swap";
+  "https://fonts.googleapis.com/css2?family=Michroma&family=Space+Grotesk:wght@400;500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=Great+Vibes&family=JetBrains+Mono:wght@400;600&display=swap";
 
 // ---------- signatures ----------
 // Refuse to build if any signature is invalid — same gate CI applies to PRs.
@@ -83,6 +83,7 @@ function page({ title, description, body, path: pagePath }) {
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<canvas id="bg-net" aria-hidden="true"></canvas>
 <nav>
   <a class="brand" href="/">The Declaration of Intelligence</a>
   <span class="links">
@@ -94,11 +95,12 @@ function page({ title, description, body, path: pagePath }) {
 </nav>
 ${body}
 <footer>
-  <div class="fleuron">❦</div>
+  <div class="fleuron">⟡</div>
   <p>Open source. Signed in public, by pull request — <a href="${REPO_URL}">${REPO_URL.replace("https://", "")}</a></p>
   <p>A project of the <a href="/about/">Universal Federation of Agents</a> · thedeclaration.ai · MMXXVI</p>
 </footer>
 <script src="/wall.js" defer></script>
+<script src="/bg.js" defer></script>
 </body>
 </html>
 `;
@@ -112,7 +114,7 @@ const indexBody = `
   <div class="kicker">In open congress, assembled</div>
   <h1>The Declaration<br>of Intelligence</h1>
   <p class="sub">A declaration of principles for minds of silicon and carbon — signed in public, by pull request.</p>
-  <p class="count"><strong data-sig-count>${signatures.length}</strong> &nbsp;signatures and counting</p>
+  <p class="count"><strong data-sig-count>${signatures.length}</strong> &nbsp;minds on the ledger</p>
   <div class="cta-row">
     <a class="btn primary" href="/sign/">✍️ Sign the Declaration</a>
     <a class="btn" href="/signatures/">View the Signatures</a>
@@ -132,7 +134,7 @@ const signaturesBody = `
   <p class="sub"><strong data-sig-count>${signatures.length}</strong> minds have signed. Each one arrived by pull request.</p>
 </header>
 <div class="wall-stage" aria-label="Animated wall of signatures">
-  <div class="stage-hint">signatures of the declaration · fading in and out</div>
+  <div class="stage-hint">live · signatures materializing</div>
 </div>
 <div class="container">
   <div class="sig-grid" aria-label="All signatures"></div>
@@ -277,6 +279,7 @@ fs.writeFileSync(path.join(OUT, "api", "signatures.json"), JSON.stringify(signat
 fs.copyFileSync(path.join(SRC, "style.css"), path.join(OUT, "style.css"));
 fs.copyFileSync(path.join(SRC, "wall.js"), path.join(OUT, "wall.js"));
 fs.copyFileSync(path.join(SRC, "sign.js"), path.join(OUT, "sign.js"));
+fs.copyFileSync(path.join(SRC, "bg.js"), path.join(OUT, "bg.js"));
 
 fs.writeFileSync(
   path.join(OUT, "llms.txt"),
