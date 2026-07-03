@@ -41,6 +41,12 @@ body {
   z-index: -1; pointer-events: none;
 }
 
+/* CRT scanlines — barely-there texture over everything */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(140, 180, 255, 0.022) 0 1px, transparent 1px 3px);
+}
+
 a { color: var(--cyan); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -59,6 +65,14 @@ nav .brand {
   color: var(--text); text-transform: uppercase;
 }
 nav .brand:hover { text-decoration: none; color: var(--cyan); }
+nav .nav-status {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: #56e39f;
+  border: 1px solid rgba(86, 227, 159, 0.3); padding: 3px 12px;
+  background: rgba(86, 227, 159, 0.06);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  animation: pulse 2.6s ease-in-out infinite;
+}
 nav .links a {
   font-family: var(--mono); color: var(--text-dim); margin-left: 22px;
   text-transform: uppercase; font-size: 12px; letter-spacing: 0.12em;
@@ -78,9 +92,19 @@ header.hero { text-align: center; padding: 84px 24px 44px; position: relative; }
   font-size: clamp(30px, 5.6vw, 62px);
   font-weight: 400; line-height: 1.22; text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: linear-gradient(120deg, #eaf4ff 20%, var(--cyan) 50%, var(--violet) 80%);
+  background: linear-gradient(120deg, #eaf4ff 10%, var(--cyan) 35%, var(--violet) 55%, #eaf4ff 75%, var(--cyan) 95%);
+  background-size: 220% auto;
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 34px rgba(110, 201, 255, 0.28));
+  animation: holo-sweep 9s linear infinite;
+}
+@keyframes holo-sweep {
+  0% { background-position: 0% center; }
+  100% { background-position: -220% center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero h1 { animation: none; }
+  .hero .count::before { animation: none; }
 }
 .hero .sub {
   max-width: 660px; margin: 26px auto 0; font-family: var(--serif); font-style: italic;
@@ -282,6 +306,29 @@ header.hero { text-align: center; padding: 84px 24px 44px; position: relative; }
 .sign-status.success { color: #56e39f; font-size: 18px; text-shadow: 0 0 20px rgba(86, 227, 159, 0.4); }
 .sign-status.error { color: #ff8a7a; }
 
+/* ---- subscribe strip ---- */
+.subscribe-strip {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 20px; margin: 0 auto 90px; max-width: 840px;
+  border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(12px);
+  padding: clamp(20px, 4vw, 34px);
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+}
+.subscribe-copy { flex: 1 1 300px; }
+.subscribe-title {
+  font-family: var(--display); font-size: 16px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--cyan);
+}
+.subscribe-sub { font-size: 14px; color: var(--text-dim); margin-top: 6px; }
+.subscribe-form { flex: 1 1 320px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: relative; }
+.subscribe-form input[type="email"] {
+  flex: 1 1 180px; background: rgba(4, 6, 12, 0.8); border: 1px solid var(--line);
+  color: var(--text); font-family: var(--ui); font-size: 15px; padding: 12px 14px;
+}
+.subscribe-form input[type="email"]:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 18px rgba(110, 201, 255, 0.2); }
+.subscribe-form .btn { padding: 12px 22px; cursor: pointer; }
+.subscribe-form .subscribe-status { flex-basis: 100%; margin-top: 2px; min-height: 0; font-size: 14px; }
+
 /* ---- footer ---- */
 footer {
   border-top: 1px solid var(--line); padding: 34px 28px 44px;
@@ -292,6 +339,16 @@ footer {
 footer .fleuron { color: var(--violet); font-size: 18px; margin-bottom: 12px; text-shadow: 0 0 20px rgba(167, 139, 250, 0.6); }
 footer a { color: var(--text-dim); text-decoration: underline; }
 footer a:hover { color: var(--cyan); }
+footer .powered-by {
+  margin-top: 14px; letter-spacing: 0.18em; text-transform: uppercase; font-size: 11px;
+}
+footer .powered-by a {
+  text-decoration: none; color: var(--cyan);
+  text-shadow: 0 0 14px rgba(110, 201, 255, 0.5);
+}
+footer .powered-by a:hover { color: #eaf7ff; text-decoration: underline; }
+
+.sign-panel .field-note { font-size: 12.5px; color: var(--text-dim); margin-top: 5px; font-style: italic; }
 
 @media (max-width: 640px) {
   body { font-size: 16px; }

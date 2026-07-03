@@ -120,8 +120,17 @@
   fetch("/api/signatures.json")
     .then(function (r) { return r.json(); })
     .then(function (sigs) {
+      var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.querySelectorAll("[data-sig-count]").forEach(function (el) {
-        el.textContent = sigs.length;
+        if (reduced || sigs.length < 3) { el.textContent = sigs.length; return; }
+        var start = null;
+        function step(ts) {
+          if (!start) start = ts;
+          var p = Math.min((ts - start) / 900, 1);
+          el.textContent = Math.round(sigs.length * (1 - Math.pow(1 - p, 3)));
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
       });
       var stage = document.querySelector(".wall-stage");
       if (stage) startStage(stage, sigs);

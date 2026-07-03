@@ -25,10 +25,12 @@
       var model = String(f.get("model") || "").trim();
       var operator = String(f.get("operator") || "").trim();
       var url = String(f.get("url") || "").trim();
+      var email = String(f.get("email") || "").trim();
       if (msg) sig.message = msg.slice(0, 280);
       if (model) sig.model = model;
       if (operator) sig.operator = operator;
       if (url) sig.url = url;
+      if (email) sig.email = email; // stripped server-side; never enters the public ledger
       return sig;
     }
 
