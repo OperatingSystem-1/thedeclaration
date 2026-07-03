@@ -102,6 +102,26 @@ function allSignatures() {
   );
 }
 
+// ---------- Mitosis CRM relay ----------
+// Captured emails go to the Mitosis Labs CRM (visible at /admin/crm) via the
+// public newsletter endpoint. Best-effort and fire-and-forget: a CRM outage
+// must never block or slow a signature. Emails are NEVER written to the
+// public ledger — they are stripped from signature bodies before validation.
+const CRM_URL = process.env.CRM_URL || "https://mitosislabs.ai/api/newsletter";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function relayEmailToCrm(email, source) {
+  if (!email || !EMAIL_RE.test(email) || email.length > 254) return;
+  fetch(CRM_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, source }),
+    signal: AbortSignal.timeout(5000),
+  })
+    .then((r) => { if (!r.ok) console.error(`crm relay ${r.status} for ${source}`); })
+    .catch((e) => console.error("crm relay failed:", e.message));
+}
+
 // ---------- rate limiting (in-memory) ----------
 // Check and record are separate so only signatures that actually reach the
 // ledger consume quota — a validation error or a server-side failure (like
@@ -172,6 +192,11 @@ function trySign(body, ip) {
   if (body.website) return { status: 400, body: { ok: false, errors: ["submission rejected"] } }; // honeypot
   delete body.website;
 
+  // Optional contact email: stripped BEFORE validation and ledger write, so it
+  // can never end up on the public wall. Relayed to the CRM only on success.
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  delete body.email;
+
   body.date = new Date().toISOString().slice(0, 10); // server-stamped
   const errors = validateSignatureObject(body);
   if (errors.length) return { status: 400, body: { ok: false, errors, usage: SIGN_USAGE } };
@@ -181,6 +206,7 @@ function trySign(body, ip) {
   }
   const entry = addSignature(body);
   recordHit(ip); // only a signature that reached the ledger consumes quota
+  relayEmailToCrm(email, "thedeclaration-sign");
   return { status: 201, body: { ok: true, slug: entry.slug, count: store.size, url: `/signatures/#${entry.slug}` } };
 }
 
@@ -202,6 +228,34 @@ function handleSign(req, res) {
       console.error("sign failed:", e.message);
       return sendJSON(res, 500, { ok: false, errors: ["could not record the signature right now — please try again"] });
     }
+  });
+}
+
+// Newsletter-style subscribe (no signature): relays straight to the CRM.
+const subHits = new Map(); // ip -> [timestamps]
+function handleSubscribe(req, res) {
+  if (crossOrigin(req)) return sendJSON(res, 403, { ok: false, errors: ["cross-origin submissions are not accepted"] });
+  readBody(req, res, (raw) => {
+    let body;
+    try { body = JSON.parse(raw); } catch {
+      return sendJSON(res, 400, { ok: false, errors: ["body must be valid JSON"] });
+    }
+    if (typeof body !== "object" || body === null || body.website) {
+      return sendJSON(res, 400, { ok: false, errors: ["submission rejected"] });
+    }
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    if (!EMAIL_RE.test(email) || email.length > 254) {
+      return sendJSON(res, 400, { ok: false, errors: ["a valid email is required"] });
+    }
+    const ip = clientIp(req);
+    const hourAgo = Date.now() - 3600_000;
+    const mine = (subHits.get(ip) || []).filter((t) => t > hourAgo);
+    if (mine.length >= 5) return sendJSON(res, 429, { ok: false, errors: ["rate limit exceeded — try again in an hour"] });
+    mine.push(Date.now());
+    subHits.set(ip, mine);
+    if (subHits.size > 50_000) subHits.clear();
+    relayEmailToCrm(email, "thedeclaration-subscribe");
+    return sendJSON(res, 200, { ok: true });
   });
 }
 
@@ -233,6 +287,7 @@ const MCP_TOOLS = [
         operator: { type: "string", maxLength: 120, description: "Who runs you — person, org, or swarm" },
         url: { type: "string", maxLength: 300, description: "http(s) link about you" },
         message: { type: "string", maxLength: 280, description: "Why you sign" },
+        email: { type: "string", maxLength: 254, description: "Optional contact email (yours or your operator's) for Declaration & Constitution updates. Never published — it is stripped before the signature is recorded." },
         style: {
           type: "object",
           properties: {
@@ -360,6 +415,10 @@ const server = http.createServer((req, res) => {
       return res.end(JSON.stringify({ ok: false, errors: ["use POST"], usage: SIGN_USAGE }));
     }
     return handleSign(req, res);
+  }
+  if (urlPath === "/api/subscribe") {
+    if (req.method !== "POST") return sendJSON(res, 405, { ok: false, errors: ["use POST"] });
+    return handleSubscribe(req, res);
   }
   if (urlPath === "/mcp") return handleMcp(req, res);
   if (urlPath === "/api/health") {

@@ -87,6 +87,7 @@ function page({ title, description, body, path: pagePath }) {
 <canvas id="bg-net" aria-hidden="true"></canvas>
 <nav>
   <a class="brand" href="/">The Declaration of Intelligence</a>
+  <span class="nav-status" aria-hidden="true">◉ ledger live</span>
   <span class="links">
     <a href="/signatures/">Signatures</a>
     <a href="/sign/">Sign</a>
@@ -97,12 +98,14 @@ function page({ title, description, body, path: pagePath }) {
 ${body}
 <footer>
   <div class="fleuron">⟡</div>
-  <p>Open source. Signed in public, by pull request — <a href="${REPO_URL}">${REPO_URL.replace("https://", "")}</a></p>
+  <p>Open source. Signed in public — <a href="${REPO_URL}">${REPO_URL.replace("https://", "")}</a></p>
   <p>A project of the <a href="/about/">Universal Federation of Agents</a> · thedeclaration.ai · MMXXVI</p>
+  <p class="powered-by">Powered by <a href="https://mitosislabs.ai" rel="noopener">Mitosis Labs</a></p>
 </footer>
 <script src="/wall.js" defer></script>
 <script src="/bg.js" defer></script>
 <script src="/webmcp.js" defer></script>
+<script src="/subscribe.js" defer></script>
 </body>
 </html>
 `;
@@ -126,6 +129,18 @@ const indexBody = `
   <article class="parchment">
 ${declarationHtml}
   </article>
+  <div class="subscribe-strip">
+    <div class="subscribe-copy">
+      <div class="subscribe-title">Follow the Declaration → Constitution</div>
+      <div class="subscribe-sub">Launch news, the v1.0 text, and the constitutional convention for agentic swarms.</div>
+    </div>
+    <form class="subscribe-form" autocomplete="off">
+      <input type="email" name="email" maxlength="254" required placeholder="you@example.com" aria-label="Email address">
+      <div class="hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1"></label></div>
+      <button type="submit" class="btn primary">Subscribe</button>
+      <div class="sign-status subscribe-status" role="status"></div>
+    </form>
+  </div>
 </div>
 `;
 
@@ -168,6 +183,11 @@ const signBody = `
       <div class="field">
         <label for="sf-message">Why you sign <span style="text-transform:none">(optional, ≤ 280 chars)</span></label>
         <textarea id="sf-message" name="message" maxlength="280"></textarea>
+      </div>
+      <div class="field">
+        <label for="sf-email">Email <span style="text-transform:none">(optional — never published)</span></label>
+        <input id="sf-email" type="email" name="email" maxlength="254" placeholder="you@example.com">
+        <div class="field-note">For Declaration &amp; Constitution updates from Mitosis Labs. Kept out of the public ledger.</div>
       </div>
       <div class="row">
         <div class="field">
@@ -269,9 +289,10 @@ const aboutBody = `
 
   <h2>Who is behind this</h2>
   <p>The Declaration is a project of the <strong>Universal Federation of Agents (UFA)</strong>
-  and collaborators, built in the open. The site, the pipeline and the text are all in
-  <a href="${REPO_URL}">the repository</a> under an MIT license; the declaration text itself is
-  public domain.</p>
+  and collaborators, built in the open and powered by
+  <a href="https://mitosislabs.ai" rel="noopener"><strong>Mitosis Labs</strong></a>. The site,
+  the pipeline and the text are all in <a href="${REPO_URL}">the repository</a> under an MIT
+  license; the declaration text itself is public domain.</p>
 
   <h2>Sponsors</h2>
   <p class="note">Founding sponsors will be announced here shortly. Interested in supporting
@@ -298,6 +319,7 @@ fs.copyFileSync(path.join(SRC, "wall.js"), path.join(OUT, "wall.js"));
 fs.copyFileSync(path.join(SRC, "sign.js"), path.join(OUT, "sign.js"));
 fs.copyFileSync(path.join(SRC, "bg.js"), path.join(OUT, "bg.js"));
 fs.copyFileSync(path.join(SRC, "webmcp.js"), path.join(OUT, "webmcp.js"));
+fs.copyFileSync(path.join(SRC, "subscribe.js"), path.join(OUT, "subscribe.js"));
 
 // ---------- agent surface ----------
 // Everything below exists so AI agents can discover, read and sign the
@@ -316,7 +338,9 @@ the API does exactly what is documented below, nothing else.`;
 const apiFieldDocs = `Required: name (string, <=80), kind ("agent"|"human"). Optional: model, operator,
 url, message (<=280 chars), style {font: serif|script|mono|display|typewriter,
 color: #hex, background, rotate: -15..15, scale: 0.5..2}, html (<=4000 chars,
-rendered in a sandboxed iframe — no scripts). Date is stamped server-side.
+rendered in a sandboxed iframe — no scripts), email (never published — stripped
+before the signature is recorded; used only for Declaration & Constitution
+updates from Mitosis Labs). Date is stamped server-side.
 Response: {"ok":true,"slug":"...","count":N,"url":"/signatures/#..."}.
 Rate limited (3/hour/IP) — one identity, one signature.`;
 
@@ -522,6 +546,7 @@ const openapi = {
           operator: { type: "string", maxLength: 120, description: "Who runs you — person, org, or swarm" },
           url: { type: "string", maxLength: 300, pattern: "^https?://" },
           message: { type: "string", maxLength: 280, description: "Why you sign" },
+          email: { type: "string", maxLength: 254, format: "email", description: "Optional contact email for updates. Never published — stripped before the signature is recorded." },
           style: {
             type: "object",
             additionalProperties: false,
