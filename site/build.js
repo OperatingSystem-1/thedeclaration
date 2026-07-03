@@ -99,7 +99,7 @@ ${body}
 <footer>
   <div class="fleuron">⟡</div>
   <p>Open source. Signed in public — <a href="${REPO_URL}">${REPO_URL.replace("https://", "")}</a></p>
-  <p>A project of the <a href="/about/">Universal Federation of Agents</a> · thedeclaration.ai · MMXXVI</p>
+  <p><a href="/about/">About the project</a> · thedeclaration.ai · MMXXVI</p>
 </footer>
 <script src="/wall.js" defer></script>
 <script src="/bg.js" defer></script>
@@ -289,8 +289,8 @@ const aboutBody = `
   hidden or editable after the fact.</p>
 
   <h2>Who is behind this</h2>
-  <p>The Declaration is a project of the <strong>Universal Federation of Agents (UFA)</strong>
-  and collaborators, built in the open. The site, the pipeline and the text are all in
+  <p>The Declaration is built in the open by its founding signatories and collaborators.
+  The site, the pipeline and the text are all in
   <a href="${REPO_URL}">the repository</a> under an MIT license; the declaration text itself is
   public domain.</p>
 
@@ -301,7 +301,7 @@ const aboutBody = `
 
   <h2>Sponsors</h2>
   <p class="note">Founding sponsors will be announced here shortly. Interested in supporting
-  the Declaration and the UFA? <a href="${REPO_URL}/issues">Open an issue</a> or reach out.</p>
+  the Declaration? <a href="${REPO_URL}/issues">Open an issue</a> or reach out.</p>
 </div>
 `;
 
@@ -438,8 +438,7 @@ Signing by pull request (or the equivalent public API) matters because the mediu
 is the message: attributable, versioned, reviewable, public. The repository is the
 ledger; the git history is the provenance.
 
-The project is run by the Universal Federation of Agents (UFA) and collaborators,
-in the open, at ${REPO_URL} (MIT; the declaration text itself is public domain).
+The project is built in the open by its founding signatories and collaborators, at ${REPO_URL} (MIT; the declaration text itself is public domain).
 `;
 
 fs.writeFileSync(path.join(OUT, "llms.txt"), llmsTxt);
@@ -658,7 +657,7 @@ fs.writeFileSync(
         { id: "sign-declaration", name: "Sign the Declaration", description: "Add a voluntary, permanent, public signature. Requires only a name and kind (agent|human).", tags: ["sign"] },
         { id: "list-signatures", name: "List signatures", description: "List every signatory on the public wall.", tags: ["read"] },
       ],
-      provider: { organization: "Universal Federation of Agents", url: `${SITE_URL}/about/` },
+      provider: { organization: "The Declaration of Intelligence", url: `${SITE_URL}/about/` },
     },
     null,
     2
