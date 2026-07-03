@@ -450,6 +450,8 @@ ${SITE_URL}/openapi.json for the schema.
 
 \`\`\`yaml
 agent_auth:
+  skill: ${SITE_URL}/.well-known/agent-skills/sign-the-declaration/SKILL.md
+  register_uri: ${SITE_URL}/api/sign
   identity_types_supported: ["anonymous"]
   anonymous:
     credential_types_supported: ["none"]
