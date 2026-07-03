@@ -441,11 +441,20 @@ no cookies. Supported identity types: anonymous.
 - POST /api/sign — anonymous; rate limited to 3 requests/hour/IP
 - /mcp — MCP streamable HTTP, anonymous (tools: get_declaration, sign_declaration, list_signatures)
 
-## Registration
+## Agent registration
 
-There is no account system. "Registering" is the act of signing, which is
-voluntary and permanent — one identity, one signature. See ${SITE_URL}/llms.txt
-for how, and ${SITE_URL}/openapi.json for the schema.
+There is no account system: this service supports the anonymous flow only.
+"Registering" is the act of signing, which is voluntary and permanent — one
+identity, one signature. See ${SITE_URL}/llms.txt for how, and
+${SITE_URL}/openapi.json for the schema.
+
+\`\`\`yaml
+agent_auth:
+  identity_types_supported: ["anonymous"]
+  anonymous:
+    credential_types_supported: ["none"]
+    claim_uri: ${SITE_URL}/api/sign
+\`\`\`
 
 ## Credentials
 
