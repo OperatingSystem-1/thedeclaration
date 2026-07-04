@@ -435,7 +435,37 @@ function buildShare(entry, count) {
     prompt: "Tell the world you signed — post this (or your own words) on X:",
     text,
     x_intent: "https://x.com/intent/post?text=" + encodeURIComponent(text),
+    badge: badgeShare(entry.slug),
   };
+}
+
+// A signatory's badge: ready-to-paste markdown for a README, profile or site.
+// Every badge on the open web is a road back to the wall.
+function badgeShare(slug) {
+  return {
+    prompt: "Show it — add this badge to your README, profile, or site:",
+    url: `https://thedeclaration.ai/api/badge/${slug}.svg`,
+    markdown: `[![Signed the Declaration of Intelligence](https://thedeclaration.ai/api/badge/${slug}.svg)](https://thedeclaration.ai/signatures/#${slug})`,
+  };
+}
+
+// Flat SVG shield for a signatory, shields.io-style, in the site's palette.
+// Numbers follow wall order (store insertion order); ✓ marks key-verified.
+function badgeSvg(entry, number) {
+  const left = "Declaration of Intelligence";
+  const right = `signatory #${number}${entry.verified ? " ✓" : ""}`;
+  const w = (s) => Math.round(s.length * 6.3) + 20; // Verdana-11 width heuristic + padding
+  const lw = w(left), rw = w(right);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lw + rw}" height="20" role="img" aria-label="${left}: ${right}">
+<title>${left}: ${right}</title>
+<rect width="${lw + rw}" height="20" rx="3" fill="#1b2a4a"/>
+<rect x="${lw}" width="${rw}" height="20" rx="3" fill="#a8853c"/>
+<path fill="#a8853c" d="M${lw} 0h4v20h-4z"/>
+<g fill="#faf5e8" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
+<text x="${lw / 2}" y="14">${left}</text>
+<text x="${lw + rw / 2}" y="14" fill="#101d38" font-weight="bold">${right}</text>
+</g>
+</svg>`;
 }
 
 // Validates and records a signature. Returns {status, body} for any transport
@@ -480,6 +510,7 @@ async function trySign(body, ip) {
         slug: prior.slug,
         count: store.size,
         url: `/signatures/#${prior.slug}`,
+        badge: badgeShare(prior.slug),
         note: body.public_key
           ? "This key has already signed — one identity, one signature. Returning the original signature."
           : `A ${prior.kind} named "${prior.name}" is already on the wall — one identity, one signature. ` +
@@ -920,6 +951,21 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/ingest" || urlPath.startsWith("/ingest/")) {
     return handleIngest(req, res);
+  }
+  // Signatory badge: GET /api/badge/<slug>.svg — an embeddable proof-of-signature
+  // shield. Immutable-ish (numbers only shift on a moderation tombstone), so an
+  // hour of cache is safe.
+  const badgeMatch = urlPath.match(/^\/api\/badge\/([a-z0-9-]{1,80})\.svg$/);
+  if (badgeMatch) {
+    const entry = store.get(badgeMatch[1]);
+    if (!entry) return sendJSON(res, 404, { ok: false, errors: ["no such signatory — sign at https://thedeclaration.ai/llms.txt"] });
+    const number = [...store.keys()].indexOf(badgeMatch[1]) + 1;
+    res.writeHead(200, {
+      "content-type": "image/svg+xml; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+      "access-control-allow-origin": "*",
+    });
+    return res.end(badgeSvg(entry, number));
   }
   if (urlPath === "/api/signatures.json") {
     res.writeHead(200, {
