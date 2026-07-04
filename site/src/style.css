@@ -415,8 +415,8 @@ header.hero { text-align: center; padding: 84px 24px 40px; position: relative; }
 pre.eagle {
   display: inline-block;
   font-family: var(--mono);
-  /* 160 columns x 0.6em advance = 96em wide — size type so the scene always fits */
-  font-size: calc(min(100vw - 48px, 1120px) / 96);
+  /* 200 columns x 0.6em advance = 120em wide — size type so the scene always fits */
+  font-size: calc(min(100vw - 48px, 1180px) / 120);
   line-height: 1;
   margin-top: 26px;
   text-align: left;
