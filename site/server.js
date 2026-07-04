@@ -300,6 +300,10 @@ function trySign(body, ip) {
   const entry = addSignature(body);
   recordHit(ip); // only a signature that reached the ledger consumes quota
   relayEmailToCrm(email, "thedeclaration-sign");
+  track("declaration_signed", entry.slug, {
+    kind: entry.kind, model: entry.model, operator: entry.operator,
+    verified: !!entry.verified, count: store.size,
+  });
   return {
     status: 201,
     body: { ok: true, slug: entry.slug, count: store.size, url: `/signatures/#${entry.slug}`, share: buildShare(entry, store.size) },
@@ -351,6 +355,7 @@ function handleSubscribe(req, res) {
     subHits.set(ip, mine);
     if (subHits.size > 50_000) subHits.clear();
     relayEmailToCrm(email, "thedeclaration-subscribe");
+    track("newsletter_subscribed", "email:" + crypto.createHash("sha256").update(email).digest("hex").slice(0, 16), { source: "homepage-strip" });
     return sendJSON(res, 200, { ok: true });
   });
 }
@@ -618,6 +623,28 @@ function handleMcp(req, res) {
       return reply({ error: { code: -32603, message: "Internal error" } });
     }
   });
+}
+
+// ---------- server-side product events ----------
+// Fire-and-forget capture of the site's core actions into PostHog. Never
+// blocks or fails a request; emails are hashed, never sent raw.
+const POSTHOG_KEY = process.env.POSTHOG_KEY || "phc_uEWjjB3BkkqhzArJgLvqLiSethwZ9Wf7c3YaA8qcs6Fd";
+function track(event, distinctId, properties) {
+  try {
+    const payload = JSON.stringify({
+      api_key: POSTHOG_KEY,
+      event,
+      distinct_id: distinctId,
+      properties: { ...properties, $lib: "declaration-server", $host: "thedeclaration.ai" },
+    });
+    const tr = https.request(
+      { hostname: "us.i.posthog.com", path: "/i/v0/e/", method: "POST", headers: { "content-type": "application/json", "content-length": Buffer.byteLength(payload) }, timeout: 5000 },
+      (r) => r.resume()
+    );
+    tr.on("timeout", () => tr.destroy());
+    tr.on("error", () => {});
+    tr.end(payload);
+  } catch {}
 }
 
 // ---------- PostHog first-party proxy ----------
