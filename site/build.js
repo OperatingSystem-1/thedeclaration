@@ -154,7 +154,6 @@ ${declarationHtml}
   </div>
 </div>
 <section class="eagle-band" aria-label="ASCII-art bald eagle">
-  <div class="kicker">E pluribus unum</div>
   <pre class="eagle" aria-hidden="true">
 ${fs.readFileSync(path.join(SRC, "eagle.html"), "utf8")}</pre>
   <div class="eagle-caption">Out of many minds, one declaration.</div>
