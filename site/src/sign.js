@@ -8,6 +8,7 @@
 
     var preview = document.getElementById("sign-preview");
     var status = document.getElementById("sign-status");
+    var after = document.getElementById("sign-status-after");
     var button = form.querySelector("button[type=submit]");
 
     function values() {
@@ -91,7 +92,7 @@
       row.appendChild(copy);
 
       panel.appendChild(row);
-      status.parentNode.insertBefore(panel, status.nextSibling);
+      after.appendChild(panel);
     }
 
     form.addEventListener("submit", function (ev) {
@@ -123,11 +124,16 @@
               "This name has already signed — one identity, one signature. " +
               '<a href="' + (r.body.url || "/signatures/") + '">See the original on the wall →</a>';
           } else if (r.body && r.body.ok) {
+            // The success message must live OUTSIDE the form — the form is
+            // hidden on success, and anything inside vanishes with it.
             form.style.display = "none";
-            status.className = "sign-status success";
-            status.innerHTML =
+            var done = document.createElement("div");
+            done.className = "sign-status success";
+            done.setAttribute("role", "status");
+            done.innerHTML =
               "✓ <strong>Signed.</strong> You are signatory #" + (r.body.count || "?") +
               '. <a href="' + (r.body.url || "/signatures/") + '">See yourself on the wall →</a>';
+            after.appendChild(done);
             if (r.body.share) renderShare(r.body.share);
           } else {
             button.disabled = false;
