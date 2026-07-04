@@ -78,18 +78,23 @@ nav .brand {
   color: var(--ink); text-transform: uppercase;
 }
 nav .brand:hover { text-decoration: none; color: var(--crimson); }
-nav .nav-status {
-  font-family: var(--serif); font-size: 11px; letter-spacing: 0.24em;
-  text-transform: uppercase; color: var(--live);
-  border: 1px solid rgba(62, 107, 79, 0.4); border-radius: 2px;
-  padding: 3px 12px; background: rgba(62, 107, 79, 0.07);
-}
-nav .nav-status { animation: pulse 3s ease-in-out infinite; }
+nav .links { display: flex; align-items: center; }
 nav .links a {
   font-family: var(--serif); color: var(--ink-soft); margin-left: 24px;
   text-transform: uppercase; font-size: 12.5px; letter-spacing: 0.18em;
 }
 nav .links a:hover { color: var(--crimson); text-decoration: none; }
+nav .links a.nav-icon { display: inline-flex; align-items: center; }
+nav .links a.nav-icon svg { display: block; }
+nav .links a.nav-sign {
+  background: var(--ink); color: var(--paper-bright);
+  border: 1px solid var(--ink); border-radius: 2px;
+  padding: 8px 20px; transition: all 0.2s ease;
+}
+nav .links a.nav-sign:hover {
+  background: var(--night); color: #fdf9ee; text-decoration: none;
+  box-shadow: 0 3px 14px rgba(16, 29, 56, 0.28);
+}
 
 /* ---- hero ---- */
 header.hero { text-align: center; padding: 84px 24px 40px; position: relative; }
