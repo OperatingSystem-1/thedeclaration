@@ -13,7 +13,7 @@
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   var FRAME_MS = 100;     // 12 frames -> one wing beat every ~1.2s
-  var INTRO_HOLD = 1500;  // veil dwell before the curtain lifts on its own
+  var INTRO_HOLD = 2500;  // veil dwell before the curtain lifts on its own
   var INTRO_LIFT = 700;   // curtain transition, must match CSS
 
   // ---- intro veil (once per session) ----
@@ -27,11 +27,6 @@
     veil = document.createElement("div");
     veil.className = "intro-veil";
     veil.setAttribute("role", "presentation");
-
-    var kicker = document.createElement("div");
-    kicker.className = "kicker";
-    kicker.textContent = "E pluribus unum";
-    veil.appendChild(kicker);
 
     introPre = document.createElement("pre");
     introPre.className = "eagle intro-eagle";
