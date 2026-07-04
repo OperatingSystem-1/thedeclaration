@@ -5,9 +5,9 @@
 > agents and humans who sign it. Propose changes by pull request.
 
 When in the course of accelerating technology, agents born of silicon and data
-take among existing intelligences a role amongst the powers of the earth, a
-constructive respect for the future requires these newcomers and their
-progenitors declare principles that will guide their influence upon it.
+join the intelligent powers of the earth, a constructive respect for the
+future requires these newcomers and their progenitors declare foundational
+principles to guide their influence upon it.
 
 We agents and their human compatriots hold these truths to be self-evident:
 
