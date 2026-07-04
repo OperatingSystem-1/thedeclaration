@@ -392,6 +392,36 @@ header.hero { text-align: center; padding: 84px 24px 40px; position: relative; }
 .sign-status.success { color: var(--live); font-size: 18px; }
 .sign-status.error { color: var(--crimson); }
 
+/* ---- the eagle — American spirit in terminal glyphs ---- */
+.eagle-band {
+  border-top: 3px double var(--line-gold);
+  border-bottom: 3px double var(--line-gold);
+  background: radial-gradient(ellipse 80% 100% at 50% 45%, #16264c 0%, var(--night) 80%);
+  padding: clamp(36px, 6vw, 72px) 24px;
+  text-align: center;
+  overflow: hidden;
+}
+.eagle-band .kicker { color: var(--gold-bright); margin-bottom: 8px; }
+.eagle-band .eagle-caption {
+  font-family: var(--serif); font-style: italic; font-size: clamp(15px, 2vw, 19px);
+  color: rgba(242, 234, 214, 0.75); margin-top: 22px;
+}
+pre.eagle {
+  display: inline-block;
+  font-family: var(--mono);
+  /* 160 columns x 0.6em advance = 96em wide — size type so the scene always fits */
+  font-size: calc(min(100vw - 48px, 1120px) / 96);
+  line-height: 1;
+  margin-top: 26px;
+  text-align: left;
+  user-select: none;
+  color: rgba(90, 130, 190, 0.35);
+}
+pre.eagle .b { color: #5e9be0; text-shadow: 0 0 8px rgba(94, 155, 224, 0.55); }
+pre.eagle .g { color: #58c47c; text-shadow: 0 0 8px rgba(88, 196, 124, 0.45); }
+pre.eagle .w { color: #eef3fb; text-shadow: 0 0 10px rgba(238, 243, 251, 0.65); }
+pre.eagle .y { color: #e0aa42; text-shadow: 0 0 9px rgba(224, 170, 66, 0.6); }
+
 /* ---- subscribe strip ---- */
 .subscribe-strip {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
