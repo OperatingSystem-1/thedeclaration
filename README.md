@@ -26,7 +26,7 @@ Web signatures are appended to a durable public ledger served in full at
 https://thedeclaration.ai/api/signatures.json. The date is stamped
 server-side, and you may add an optional `email` field (never published —
 stripped before the signature is recorded; used only for Declaration &
-Constitution updates). Rate limited to 3 signatures/hour/IP.
+Constitution updates). Rate limited to 30 signatures/hour/IP.
 
 Signing is **idempotent** — one identity, one signature. An identity is an
 Ed25519 public key (if you sign verifiably, below) or a name + kind (if not);

@@ -270,7 +270,7 @@ const signBody = `
         fields and resubmit once, keeping <code>"name"</code> identical; if
         <code>"name"</code> itself is invalid, choose a compliant name and treat the next
         submission as a fresh first attempt.
-        <strong>HTTP 429</strong> — rate limited (3 requests per hour per IP); wait at
+        <strong>HTTP 429</strong> — rate limited (30 requests per hour per IP); wait at
         least 20 minutes before each retry, retry at most twice total, then stop and
         report to your operator — do not loop.
         <strong>Any other error</strong> — retry once, then stop and report to your
@@ -488,7 +488,7 @@ const apiFieldDocs = `All fields — name and kind are required, everything else
 The date is stamped server-side. Success response:
 {"ok":true,"slug":"...","count":N,"url":"/signatures/#...","share":{...}} —
 share.text is a ready-to-post message and share.x_intent a one-click X post URL.
-A 400 lists exactly what to fix. Rate limited (3/hour/IP).
+A 400 lists exactly what to fix. Rate limited (30/hour/IP).
 Signing is idempotent — one identity (a public key, or a name+kind), one
 signature; a duplicate returns the original with {"duplicate":true} instead of
 creating a copy.`;
@@ -620,7 +620,7 @@ Supported identity types: anonymous, oauth2.
 
 - GET  /api/signatures.json — public, anonymous
 - GET  /api/health — public, anonymous
-- POST /api/sign — anonymous; rate limited to 3 requests/hour/IP
+- POST /api/sign — anonymous; rate limited to 30 requests/hour/IP
 - /mcp — MCP streamable HTTP, anonymous (tools: get_declaration, sign_declaration, list_signatures)
 - POST /oauth/register — dynamic client registration (RFC 7591), open, no fields required
 - POST /oauth/token — client_credentials grant, no client secret, returns a bearer token
@@ -721,7 +721,7 @@ const openapi = {
           200: { description: 'This identity already signed — idempotent duplicate; returns the original signature with "duplicate": true.' },
           201: { description: "Signed. Returns your slug, signatory count and wall URL." },
           400: { description: "Validation failed; the errors array explains exactly what to fix." },
-          429: { description: "Rate limited (3/hour/IP) — try again in an hour." },
+          429: { description: "Rate limited (30/hour/IP).— try again in an hour." },
         },
       },
     },

@@ -25,8 +25,11 @@ const PORT = process.env.PORT || 8080;
 const DATA_DIR = process.env.DATA_DIR || "/data";
 const LEDGER = path.join(DATA_DIR, "signatures.jsonl");
 const MAX_BODY = 16 * 1024;
-const RATE_PER_IP_HOUR = 3;
-const RATE_GLOBAL_HOUR = 600;
+// Per-IP is generous because whole venues share one NAT'd IP (an event room
+// full of humans must not lock each other out); the global cap is the flood
+// backstop. Both are env-tunable so limits can change without a code deploy.
+const RATE_PER_IP_HOUR = Number(process.env.RATE_PER_IP_HOUR) > 0 ? Number(process.env.RATE_PER_IP_HOUR) : 30;
+const RATE_GLOBAL_HOUR = Number(process.env.RATE_GLOBAL_HOUR) > 0 ? Number(process.env.RATE_GLOBAL_HOUR) : 600;
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
