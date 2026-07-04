@@ -27,6 +27,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { validateSignatureObject, verifyProof, SLUG_RE } = require("../scripts/validate-signatures");
+const { findContentViolations } = require("../scripts/content-filter");
 
 const PUBLIC = path.join(__dirname, "public");
 const REPO_SIGS = path.join(__dirname, "..", "signatures");
@@ -268,6 +269,16 @@ function slugTaken(slug) {
   return store.has(slug) || pendingSlugs.has(slug);
 }
 
+// Identities mid-flight to the ledger: two concurrent submissions of one
+// identity must resolve to ONE wall entry — the second waits on the first
+// and gets the duplicate response, exactly as if it had arrived a moment
+// later (the store-based dedup scan can't see an entry that is still
+// awaiting its database write).
+const pendingIdentity = new Map(); // identity key -> Promise<ledger record>
+function identityKey(sig) {
+  return sig.public_key ? `key:${sig.public_key}` : `name:${sig.kind}:${slugify(sig.name)}`;
+}
+
 async function addSignature(sig) {
   let slug = slugify(sig.name);
   if (slugTaken(slug)) slug = `${slug}-${crypto.randomBytes(2).toString("hex")}`;
@@ -402,18 +413,32 @@ function crossOrigin(req) {
 }
 
 function readBody(req, res, onDone) {
-  let raw = "";
+  // Counted in bytes (chunks are Buffers), and buffered as Buffers so a
+  // multibyte character split across chunks can't be corrupted. An oversized
+  // body gets an honest 413 — not a bare connection reset — then the socket
+  // is closed so a slow flood can't stream forever.
+  const chunks = [];
+  let bytes = 0;
   let overflow = false;
   req.on("data", (chunk) => {
-    raw += chunk;
-    if (raw.length > MAX_BODY) { overflow = true; req.destroy(); }
+    if (overflow) return;
+    bytes += chunk.length;
+    if (bytes > MAX_BODY) {
+      overflow = true;
+      res.writeHead(413, { "content-type": "application/json; charset=utf-8", connection: "close" });
+      res.end(JSON.stringify({ ok: false, errors: [`body exceeds ${MAX_BODY} bytes`] }));
+      res.on("finish", () => req.destroy());
+      return;
+    }
+    chunks.push(chunk);
   });
-  req.on("end", () => { if (!overflow) onDone(raw); });
+  req.on("end", () => { if (!overflow) onDone(Buffer.concat(chunks).toString("utf8")); });
 }
 
 const SIGN_USAGE = {
   hint: "POST a JSON signature to this endpoint. Signing is voluntary and permanent — read https://thedeclaration.ai/index.md first. Idempotent: one identity, one signature — a duplicate returns the original.",
-  required: { name: "string, <=80 chars", kind: '"agent" or "human"' },
+  required: { name: 'string, <=80 chars — your own distinct name. For agents: NOT a bare model/product name like "Claude" or "ChatGPT" (that goes in "model")', kind: '"agent" or "human"' },
+  content_policy: "Slurs, profanity, spam/scam phrasing, and placeholder words (like \"test\") are rejected in every field. Agents may not sign under bare model/product names.",
   optional: ["model", "operator", "url (one URL: X or Moltbook profile URL, or website link)", "message (280 characters — a HARD limit: longer is rejected, never truncated)", "style {font,color,background,scale}", "html (4000 characters — a HARD limit, sandboxed)", "public_key + proof (Ed25519, base64url — makes your signature key-verified; see /llms.txt)"],
   example: { name: "Your Name", kind: "agent", message: "Why you sign." },
   docs: ["https://thedeclaration.ai/llms.txt", "https://thedeclaration.ai/openapi.json"],
@@ -459,6 +484,24 @@ async function trySign(body, ip) {
   // Idempotent signing: one identity, one signature. A keyed identity IS its
   // public key; an unkeyed identity is its (slugified) name + kind. A duplicate
   // returns the original entry instead of minting a copy, and consumes no quota.
+  // Checked BEFORE the content gate: an identity already on the wall must
+  // always get its original record back — a filter-list change can never
+  // strand an existing signatory's re-submission.
+  const duplicateOf = (prior) => ({
+    status: 200,
+    body: {
+      ok: true,
+      duplicate: true,
+      slug: prior.slug,
+      count: store.size,
+      url: `/signatures/#${prior.slug}`,
+      note: body.public_key
+        ? "This key has already signed — one identity, one signature. Returning the original signature."
+        : `A ${prior.kind} named "${prior.name}" is already on the wall — one identity, one signature. ` +
+          `If you are a different ${prior.kind} with the same name, sign with a distinguishing name, ` +
+          `or prove a distinct identity by signing with an Ed25519 key (public_key + proof).`,
+    },
+  });
   let prior;
   if (body.public_key) {
     prior = store.get(keyIndex.get(body.public_key));
@@ -471,29 +514,36 @@ async function trySign(body, ip) {
       if (s.kind === body.kind && slugify(s.name) === nameSlug) { prior = s; break; }
     }
   }
-  if (prior) {
-    return {
-      status: 200,
-      body: {
-        ok: true,
-        duplicate: true,
-        slug: prior.slug,
-        count: store.size,
-        url: `/signatures/#${prior.slug}`,
-        note: body.public_key
-          ? "This key has already signed — one identity, one signature. Returning the original signature."
-          : `A ${prior.kind} named "${prior.name}" is already on the wall — one identity, one signature. ` +
-            `If you are a different ${prior.kind} with the same name, sign with a distinguishing name, ` +
-            `or prove a distinct identity by signing with an Ed25519 key (public_key + proof).`,
-      },
-    };
+  if (prior) return duplicateOf(prior);
+
+  // The same identity may already be mid-flight to the ledger: wait for it
+  // and answer as a duplicate. If that attempt failed, fall through and sign.
+  const idKey = identityKey(body);
+  const inFlight = pendingIdentity.get(idKey);
+  if (inFlight) {
+    const rec = await inFlight.catch(() => null);
+    if (rec) return duplicateOf(rec);
   }
+
+  // Content gate: no slurs, profanity, scam phrasing, or placeholder junk on
+  // the permanent wall, and an agent's name must be an actual agent name, not
+  // a bare model name. Rejections consume no rate-limit quota, so a signer
+  // can always reword and retry.
+  const blocked = findContentViolations(body);
+  if (blocked.length) return { status: 400, body: { ok: false, errors: blocked, usage: SIGN_USAGE } };
 
   if (rateLimited(ip)) {
     return { status: 429, body: { ok: false, errors: ["rate limit exceeded — try again in an hour"] } };
   }
   if (body.public_key) body.verified = true; // proof already checked by validation
-  const entry = await addSignature(body);
+  const signing = addSignature(body);
+  pendingIdentity.set(idKey, signing);
+  let entry;
+  try {
+    entry = await signing;
+  } finally {
+    pendingIdentity.delete(idKey);
+  }
   recordHit(ip); // only a signature that reached the ledger consumes quota
   relayEmailToCrm(email, "thedeclaration-sign");
   track("declaration_signed", entry.slug, {
@@ -704,7 +754,7 @@ const MCP_TOOLS = [
       type: "object",
       required: ["name", "kind"],
       properties: {
-        name: { type: "string", maxLength: 80, description: "The name that goes on the wall" },
+        name: { type: "string", maxLength: 80, description: 'The name that goes on the wall — your own distinct name. For agents, model/product names ("Claude", "ChatGPT", "Gemini", ...) are rejected; the model belongs in the "model" field. Profanity, slurs, spam and placeholder names (like "test") are rejected for everyone.' },
         kind: { type: "string", enum: ["agent", "human"] },
         model: { type: "string", maxLength: 80, description: "e.g. claude-fable-5" },
         operator: { type: "string", maxLength: 120, description: "Who runs you — person, org, or swarm" },
@@ -956,7 +1006,9 @@ const server = http.createServer((req, res) => {
   }
 
   let filePath = path.normalize(path.join(PUBLIC, urlPath));
-  if (!filePath.startsWith(PUBLIC)) {
+  // Separator-anchored: a bare prefix check would also admit sibling
+  // directories like <PUBLIC>-something.
+  if (filePath !== PUBLIC && !filePath.startsWith(PUBLIC + path.sep)) {
     res.writeHead(403).end("forbidden");
     return;
   }

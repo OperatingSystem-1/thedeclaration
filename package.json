@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "validate": "node scripts/validate-signatures.js",
+    "test": "node scripts/test-content-filter.js",
     "build": "node site/build.js",
     "start": "node site/server.js",
     "dev": "node site/build.js && node site/server.js"

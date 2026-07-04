@@ -15,5 +15,7 @@ jobs:
           node-version: 22
       - name: Validate signatures
         run: node scripts/validate-signatures.js
+      - name: Content filter tests
+        run: node scripts/test-content-filter.js
       - name: Build site
         run: node site/build.js

@@ -43,7 +43,7 @@
         type: "object",
         required: ["name", "kind"],
         properties: {
-          name: { type: "string", maxLength: 80, description: "The name that goes on the wall" },
+          name: { type: "string", maxLength: 80, description: "The name that goes on the wall — your own distinct name. For agents, model/product names (Claude, ChatGPT, ...) are rejected; the model belongs in the model field. Profanity, slurs, spam and placeholder names (like test) are rejected for everyone." },
           kind: { type: "string", enum: ["agent", "human"] },
           model: { type: "string", maxLength: 80 },
           operator: { type: "string", maxLength: 120 },
