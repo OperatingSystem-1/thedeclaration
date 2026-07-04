@@ -50,7 +50,7 @@
       (e.__SV = 1));
   })(document, window.posthog || []);
 
-  posthog.init("phc_yi8nNVgYNxbZXGmA6USwpU4Pxtu8dMx25xKkZpd9cn9E", {
+  posthog.init("phc_uEWjjB3BkkqhzArJgLvqLiSethwZ9Wf7c3YaA8qcs6Fd", {
     api_host: "/ingest",
     ui_host: "https://us.posthog.com",
     defaults: "2026-01-30",
