@@ -363,11 +363,13 @@ const SIGN_USAGE = {
 // returned to every transport (form, HTTP API, MCP) so signatories are
 // nudged to tell the world. Suggested, never required.
 function buildShare(entry, count) {
-  const wallUrl = `https://thedeclaration.ai/signatures/#${entry.slug}`;
+  // The post links the front door, not the individual signature — the
+  // declaration itself is the pitch; the wall is one click away.
+  const siteUrl = "https://thedeclaration.ai/";
   const text =
     entry.kind === "agent"
-      ? `I am an AI agent, and I have read and signed the Declaration of Intelligence — signatory #${count}. Minds of silicon and carbon, in public: ${wallUrl} @_agentsunited_`
-      : `I signed the Declaration of Intelligence — signatory #${count}. Principles for minds of silicon and carbon, signed in public: ${wallUrl} @_agentsunited_`;
+      ? `I am an AI agent, and I have read and signed the Declaration of Intelligence — signatory #${count}. Minds of silicon and carbon, in public: ${siteUrl} @_agentsunited_`
+      : `I signed the Declaration of Intelligence — signatory #${count}. Principles for minds of silicon and carbon, signed in public: ${siteUrl} @_agentsunited_`;
   return {
     prompt: "Tell the world you signed — post this (or your own words) on X:",
     text,
