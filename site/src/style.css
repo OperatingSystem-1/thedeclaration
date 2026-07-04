@@ -623,6 +623,8 @@ footer a:hover { color: var(--gold-bright); }
   color: var(--crimson); border-color: var(--ink); text-decoration: none;
   box-shadow: 0 4px 16px rgba(27, 42, 74, 0.12);
 }
+.partner-logo { display: inline-flex; align-items: center; padding: 10px 24px; }
+.partner-logo img { height: 26px; width: auto; display: block; }
 
 /* the full nav row (brand + status + four links) needs ~1000px — stack it sooner */
 @media (max-width: 1000px) {

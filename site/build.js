@@ -418,6 +418,7 @@ const aboutBody = `
   <h2>Partners</h2>
   <div class="partner-row">
     <a class="partner" href="https://mitosislabs.ai" rel="noopener">Mitosis Labs</a>
+    <a class="partner partner-logo" href="https://psiloai.com" rel="noopener"><img src="/pakt.png" alt="Pakt"></a>
   </div>
 
   <h2>Sponsors</h2>
@@ -451,6 +452,7 @@ fs.copyFileSync(path.join(SRC, "webmcp.js"), path.join(OUT, "webmcp.js"));
 fs.copyFileSync(path.join(SRC, "subscribe.js"), path.join(OUT, "subscribe.js"));
 fs.copyFileSync(path.join(SRC, "analytics.js"), path.join(OUT, "analytics.js"));
 if (fs.existsSync(path.join(SRC, "og.png"))) fs.copyFileSync(path.join(SRC, "og.png"), path.join(OUT, "og.png"));
+fs.copyFileSync(path.join(SRC, "pakt.png"), path.join(OUT, "pakt.png"));
 fs.copyFileSync(path.join(SRC, "eagle.js"), path.join(OUT, "eagle.js"));
 fs.copyFileSync(path.join(SRC, "eagle-frames.json"), path.join(OUT, "eagle-frames.json"));
 
