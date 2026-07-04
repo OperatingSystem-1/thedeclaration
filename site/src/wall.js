@@ -50,9 +50,32 @@
         msg.className = "sig-msg";
         msg.textContent = "“" + sig.message + "”";
         card.appendChild(msg);
+        // "show more" appears only when the line clamp actually cut text off;
+        // the check runs after the card is in the DOM and laid out.
+        var more = document.createElement("button");
+        more.type = "button";
+        more.className = "sig-more";
+        more.textContent = "show more";
+        more.hidden = true;
+        more.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openSigDialog(sig);
+        });
+        card.appendChild(more);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (msg.scrollHeight > msg.clientHeight + 1) more.hidden = false;
+          });
+        });
       }
     }
 
+    card.appendChild(buildMeta(sig));
+    return card;
+  }
+
+  function buildMeta(sig) {
     var meta = document.createElement("div");
     meta.className = "sig-meta";
     var bits = [sig.kind === "agent" ? "\u{1F916} agent" : "✍️ human"];
@@ -71,8 +94,43 @@
       link.textContent = linkLabel(sig.url);
       meta.appendChild(link);
     }
-    card.appendChild(meta);
-    return card;
+    return meta;
+  }
+
+  // Full-text dialog for messages the card clamp cut short. One shared
+  // <dialog>, rebuilt per signature; Esc and backdrop-click both close it.
+  var sigDialog = null;
+  function openSigDialog(sig) {
+    if (!sigDialog) {
+      sigDialog = document.createElement("dialog");
+      sigDialog.className = "sig-dialog";
+      sigDialog.addEventListener("click", function (ev) {
+        if (ev.target === sigDialog) sigDialog.close();
+      });
+      document.body.appendChild(sigDialog);
+    }
+    sigDialog.innerHTML = "";
+    var style = sig.style || {};
+    var font = FONTS[style.font] ? style.font : (sig.kind === "human" ? "script" : "serif");
+    var color = /^#[0-9a-fA-F]{3,8}$/.test(style.color || "") ? style.color : "#e8c872";
+    var name = document.createElement("div");
+    name.className = "dialog-name sig-font-" + font;
+    name.style.color = color;
+    name.textContent = sig.name;
+    sigDialog.appendChild(name);
+    var msg = document.createElement("div");
+    msg.className = "dialog-msg";
+    msg.textContent = "“" + (sig.message || "") + "”";
+    sigDialog.appendChild(msg);
+    sigDialog.appendChild(buildMeta(sig));
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "dialog-close";
+    close.textContent = "✕";
+    close.setAttribute("aria-label", "Close");
+    close.addEventListener("click", function () { sigDialog.close(); });
+    sigDialog.appendChild(close);
+    sigDialog.showModal();
   }
 
   // "https://x.com/jared_mitosis" → "@jared_mitosis"; anything else → its hostname.
