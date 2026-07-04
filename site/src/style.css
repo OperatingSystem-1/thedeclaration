@@ -611,6 +611,26 @@ footer a:hover { color: var(--gold-bright); }
 .share-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .share-row .btn { padding: 11px 22px; font-size: 13px; cursor: pointer; }
 
+/* ---- signature share card ---- */
+.card-canvas {
+  display: block; width: 100%; max-width: 560px; height: auto;
+  margin: 0 auto 16px; border: 1px solid rgba(194, 162, 94, 0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+.card-page h1 { text-align: center; }
+.card-page .card-lede { text-align: center; max-width: 560px; margin: 0 auto 26px; }
+.card-stage { display: flex; justify-content: center; }
+.card-actions { justify-content: center; margin: 6px 0 18px; }
+.card-page .sign-status { text-align: center; }
+.card-page .note { text-align: center; max-width: 620px; margin: 0 auto; }
+.dialog-card-link {
+  display: inline-block; margin-top: 14px;
+  font-family: var(--serif); font-size: 13px; letter-spacing: 0.08em;
+  color: var(--gold); text-decoration: none;
+  border-bottom: 1px solid rgba(232, 200, 114, 0.4);
+}
+.dialog-card-link:hover { border-bottom-color: var(--gold); }
+
 /* ---- partners (about page) ---- */
 .partner-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 16px 0 8px; }
 .partner {

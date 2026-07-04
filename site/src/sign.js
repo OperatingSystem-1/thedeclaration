@@ -70,7 +70,44 @@
     form.addEventListener("input", renderPreview);
     applyKind();
 
-    function renderShare(share) {
+    // Your signature card, drawn right here with the page's real fonts —
+    // one click to a PNG worth posting.
+    function renderCard(panel, share, sig, number) {
+      if (!window.DeclarationCardImage) return;
+      var canvas = document.createElement("canvas");
+      canvas.className = "card-canvas";
+      canvas.setAttribute("role", "img");
+      canvas.setAttribute("aria-label", "Your signature card");
+      panel.appendChild(canvas);
+
+      var row = document.createElement("div");
+      row.className = "share-row";
+      var dl = document.createElement("button");
+      dl.type = "button";
+      dl.className = "btn primary";
+      dl.textContent = "⬇ Download your card (PNG)";
+      dl.addEventListener("click", function () {
+        window.DeclarationCardImage.download(canvas, number).catch(function () {
+          if (share.card) location.href = share.card.page;
+        });
+      });
+      row.appendChild(dl);
+      if (share.card) {
+        var open = document.createElement("a");
+        open.className = "btn";
+        open.href = share.card.page.replace("https://thedeclaration.ai", "");
+        open.textContent = "Open card page";
+        row.appendChild(open);
+      }
+      panel.appendChild(row);
+
+      window.DeclarationCardImage.render(canvas, sig, number).catch(function () {
+        canvas.remove();
+        row.remove();
+      });
+    }
+
+    function renderShare(share, sig, number) {
       var panel = document.createElement("div");
       panel.className = "share-panel";
 
@@ -78,6 +115,8 @@
       title.className = "share-title";
       title.textContent = "One more thing — tell the world";
       panel.appendChild(title);
+
+      if (sig && number) renderCard(panel, share, sig, number);
 
       var text = document.createElement("div");
       text.className = "share-text";
@@ -144,7 +183,8 @@
             status.className = "sign-status success";
             status.innerHTML =
               "This name has already signed — one identity, one signature. " +
-              '<a href="' + (r.body.url || "/signatures/") + '">See the original on the wall →</a>';
+              '<a href="' + (r.body.url || "/signatures/") + '">See the original on the wall →</a>' +
+              (r.body.slug ? ' · <a href="/card/?s=' + r.body.slug + '">Get the signature card →</a>' : "");
           } else if (r.body && r.body.ok) {
             // The success message must live OUTSIDE the form — the form is
             // hidden on success, and anything inside vanishes with it.
@@ -157,7 +197,7 @@
               "✓ <strong>Signed.</strong> You are signatory #" + (r.body.count || "?") +
               '. <a href="' + (r.body.url || "/signatures/") + '">See yourself on the wall →</a>';
             after.appendChild(done);
-            if (r.body.share) renderShare(r.body.share);
+            if (r.body.share) renderShare(r.body.share, sig, r.body.count);
           } else {
             button.disabled = false;
             status.className = "sign-status error";

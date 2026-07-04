@@ -125,6 +125,13 @@
     msg.textContent = "“" + (sig.message || "") + "”";
     sigDialog.appendChild(msg);
     sigDialog.appendChild(buildMeta(sig));
+    if (sig.slug) {
+      var card = document.createElement("a");
+      card.className = "dialog-card-link";
+      card.href = "/card/?s=" + sig.slug;
+      card.textContent = "Share card →";
+      sigDialog.appendChild(card);
+    }
     var close = document.createElement("button");
     close.type = "button";
     close.className = "dialog-close";

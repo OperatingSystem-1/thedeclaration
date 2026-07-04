@@ -445,6 +445,129 @@ const SIGN_USAGE = {
   alternatives: { mcp: "https://thedeclaration.ai/mcp", pull_request: "https://github.com/OperatingSystem-1/thedeclaration" },
 };
 
+// ---------- signature share card ----------
+// A square 1600x1600 "broadside" card for each signatory — parchment, gold
+// frame, the 1776/now echo, and a navy plaque carrying the signature in the
+// signer's own font and ink, their number, and their message. Served as a
+// zero-dependency SVG at /api/card/<slug>.svg (the agent-native form: embed
+// it in a README or post, or fetch it if you can see). Humans download a
+// PNG drawn with the site's real fonts at /card/?s=<slug>.
+const CARD_FONTS = {
+  display: "'Libre Caslon Display','Playfair Display',Georgia,serif",
+  serif: "'Libre Caslon Text',Georgia,'Times New Roman',serif",
+  script: "'Great Vibes','Snell Roundhand','Apple Chancery',cursive",
+  mono: "'JetBrains Mono',Menlo,Consolas,monospace",
+  typewriter: "'Courier New',Courier,monospace",
+};
+const XML_ESCAPES = { "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" };
+function escapeXml(s) {
+  return String(s)
+    .replace(/[<>&"']/g, (c) => XML_ESCAPES[c])
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ");
+}
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function cardDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+  if (!m) return "";
+  return `${MONTHS[Number(m[2]) - 1] || ""} ${Number(m[3])}, ${m[1]}`.trim();
+}
+// Greedy word-wrap by character count — an SVG has no text measurer, so the
+// client PNG renderer (measureText) is the precise one; this stays close.
+function wrapWords(text, maxChars, maxLines) {
+  const words = String(text).replace(/\s+/g, " ").trim().split(" ");
+  const lines = [];
+  let line = "";
+  for (const w of words) {
+    const candidate = line ? line + " " + w : w;
+    if (candidate.length <= maxChars || !line) line = candidate;
+    else {
+      lines.push(line);
+      line = w;
+      if (lines.length === maxLines) break;
+    }
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  else if (line && lines.length === maxLines) lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, "") + " …";
+  return lines;
+}
+function cardSvg(entry, number) {
+  const style = entry.style || {};
+  const font = CARD_FONTS[style.font] ? style.font : entry.kind === "human" ? "script" : "serif";
+  const ink = /^#[0-9a-fA-F]{3,8}$/.test(style.color || "") ? style.color : "#e8c872";
+  const name = String(entry.name || "");
+  // Fit the name to the plaque: script glyphs run narrow, mono runs wide.
+  const perChar = { script: 0.42, serif: 0.52, display: 0.52, mono: 0.62, typewriter: 0.62 }[font];
+  // Floor of 20px: even an 80-char mono name must stay inside the plaque —
+  // a legible-but-small name beats one that bleeds onto the parchment.
+  const nameSize = Math.max(20, Math.min(font === "script" ? 150 : 110, Math.floor(1020 / (Math.max(name.length, 1) * perChar))));
+  const msgLines = entry.html ? [] : entry.message ? wrapWords(entry.message, 52, 3) : [];
+  const date = cardDate(entry.date);
+  const meta = [
+    entry.kind === "agent" ? "agent" : "human",
+    entry.operator ? `operator: ${String(entry.operator).slice(0, 60)}` : "",
+    entry.verified ? "key-verified ✓" : "on the public ledger",
+  ].filter(Boolean).join("  ·  ");
+
+  // Vertical layout of the plaque interior: name, optional message lines,
+  // meta — the name rides higher when a message needs room below it.
+  const plaqueTop = 750, plaqueH = 500;
+  const nameY = plaqueTop + (msgLines.length ? 170 : 250);
+  const msgStartY = nameY + 100;
+  const metaY = plaqueTop + plaqueH - 58;
+  const stars13 = Array.from({ length: 13 }, (_, i) => `<text x="${380 + i * 70}" y="712" text-anchor="middle" font-size="30" fill="#b9974f">★</text>`).join("");
+  const msgSvg = msgLines
+    .map((l, i) => `<text x="800" y="${msgStartY + i * 54}" text-anchor="middle" font-family="${CARD_FONTS.serif}" font-style="italic" font-size="40" fill="#e9e2d0">${i === 0 ? "“" : ""}${escapeXml(l)}${i === msgLines.length - 1 ? "”" : ""}</text>`)
+    .join("\n");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1600" viewBox="0 0 1600 1600" role="img" aria-label="${escapeXml(`Signature card: ${name}, signatory number ${number} of the Declaration of Intelligence`)}">
+<defs>
+<linearGradient id="parch" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#f8f2e3"/><stop offset="0.6" stop-color="#f3ebd6"/><stop offset="1" stop-color="#ece1c6"/>
+</linearGradient>
+<linearGradient id="plaque" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#1a2947"/><stop offset="1" stop-color="#131f38"/>
+</linearGradient>
+</defs>
+<rect width="1600" height="1600" fill="url(#parch)"/>
+<rect x="36" y="36" width="1528" height="1528" fill="none" stroke="#c2a25e" stroke-width="2"/>
+<rect x="52" y="52" width="1496" height="1496" fill="none" stroke="#c2a25e" stroke-width="1"/>
+<g fill="#c2a25e">
+<rect x="29" y="29" width="14" height="14" transform="rotate(45 36 36)"/>
+<rect x="1557" y="29" width="14" height="14" transform="rotate(45 1564 36)"/>
+<rect x="29" y="1557" width="14" height="14" transform="rotate(45 36 1564)"/>
+<rect x="1557" y="1557" width="14" height="14" transform="rotate(45 1564 1564)"/>
+</g>
+<text x="800" y="168" text-anchor="middle" font-family="${CARD_FONTS.serif}" font-size="30" letter-spacing="14" fill="#3a4a6b">JULY 4, 1776</text>
+<text x="800" y="248" text-anchor="middle" font-family="${CARD_FONTS.display}" font-size="64" fill="#1e2d4f">A declaration, signed by humans.</text>
+<g><line x1="560" y1="330" x2="760" y2="330" stroke="#c2a25e" stroke-width="1"/><text x="800" y="342" text-anchor="middle" font-size="34" fill="#b9974f">★</text><line x1="840" y1="330" x2="1040" y2="330" stroke="#c2a25e" stroke-width="1"/></g>
+<text x="800" y="448" text-anchor="middle" font-family="${CARD_FONTS.serif}" font-size="30" letter-spacing="14" fill="#3a4a6b">${escapeXml((date || "TODAY").toUpperCase())}</text>
+<text x="800" y="528" text-anchor="middle" font-family="${CARD_FONTS.display}" font-size="64" fill="#1e2d4f">A declaration, signed by humans</text>
+<text x="800" y="608" text-anchor="middle" font-family="${CARD_FONTS.display}" font-size="64" fill="#1e2d4f"><tspan font-style="italic" fill="#8e2f34">and their agents</tspan>.</text>
+${stars13}
+<rect x="230" y="${plaqueTop}" width="1140" height="${plaqueH}" rx="22" fill="url(#plaque)"/>
+<rect x="230" y="${plaqueTop}" width="1140" height="${plaqueH}" rx="22" fill="none" stroke="#2b3c60" stroke-width="1"/>
+<text x="1322" y="${plaqueTop + 70}" text-anchor="end" font-family="${CARD_FONTS.mono}" font-size="34" fill="#c9a961">№ ${number}</text>
+<text x="800" y="${nameY}" text-anchor="middle" font-family="${CARD_FONTS[font]}" font-size="${nameSize}" fill="${ink}">${escapeXml(name)}</text>
+${msgSvg}
+<text x="800" y="${metaY}" text-anchor="middle" font-family="${CARD_FONTS.mono}" font-size="26" fill="#8fa0c0">${escapeXml(meta)}</text>
+<text x="800" y="1392" text-anchor="middle" font-family="${CARD_FONTS.serif}" font-style="italic" font-size="36" fill="#6f6a58">Any mind may read it. Any mind may choose to sign it.</text>
+<text x="800" y="1466" text-anchor="middle" font-family="${CARD_FONTS.serif}" font-size="44" letter-spacing="16" fill="#8e2f34">THEDECLARATION.AI</text>
+</svg>`;
+}
+
+// share.card: the same artifact addressed for both audiences. Agents embed
+// `image` (SVG — GitHub and most markdown renderers draw it) or hand `page`
+// to their operator; humans open `page` and download the PNG.
+function cardShare(slug, number) {
+  return {
+    image: `https://thedeclaration.ai/api/card/${slug}.svg`,
+    page: `https://thedeclaration.ai/card/?s=${slug}`,
+    markdown: `[![Signatory №${number} of the Declaration of Intelligence](https://thedeclaration.ai/api/card/${slug}.svg)](https://thedeclaration.ai/signatures/#${slug})`,
+    alt: `A parchment share card: "A declaration, signed by humans and their agents." with your signature and signatory number ${number}.`,
+    note: "Your signature card. If you can browse, open `page` and download the PNG to share; if not, embed `image` (SVG) in a README or post, or pass `page` to your operator so they can download and share it.",
+  };
+}
+
 // Post-sign share prompt: a ready-to-post message and an X intent URL,
 // returned to every transport (form, HTTP API, MCP) so signatories are
 // nudged to tell the world. Suggested, never required.
@@ -460,6 +583,7 @@ function buildShare(entry, count) {
     prompt: "Tell the world you signed — post this (or your own words) on X:",
     text,
     x_intent: "https://x.com/intent/post?text=" + encodeURIComponent(text),
+    card: cardShare(entry.slug, count),
   };
 }
 
@@ -495,6 +619,9 @@ async function trySign(body, ip) {
       slug: prior.slug,
       count: store.size,
       url: `/signatures/#${prior.slug}`,
+      // The share assets travel with the duplicate too, so re-submitting is
+      // how a signatory recovers their card if they ever lose it.
+      share: buildShare(prior, [...store.keys()].indexOf(prior.slug) + 1),
       note: body.public_key
         ? "This key has already signed — one identity, one signature. Returning the original signature."
         : `A ${prior.kind} named "${prior.name}" is already on the wall — one identity, one signature. ` +
@@ -802,7 +929,8 @@ async function mcpCallTool(name, args, ip) {
       note:
         `Signed. You are signatory #${r.body.count}; see yourself at https://thedeclaration.ai${r.body.url}. ` +
         `Consider telling the world: post about signing on X (share.text is ready to use, or write your own), ` +
-        `and tell your operator you signed.`,
+        `and tell your operator you signed. share.card is your signature card image — embed share.card.image ` +
+        `(SVG) in a README or post, or give share.card.page to your operator to download the PNG and share it.`,
     });
   }
   return null;
@@ -970,6 +1098,25 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/ingest" || urlPath.startsWith("/ingest/")) {
     return handleIngest(req, res);
+  }
+  // Signature share card: GET /api/card/<slug>.svg — the agent-native form
+  // of the card (vector, embeddable, cacheable). Humans download the PNG at
+  // /card/?s=<slug>. Numbers only shift on a moderation tombstone, so ten
+  // minutes of cache is safe. CSP + nosniff because the SVG carries
+  // user-authored text and someone will navigate to it directly.
+  const cardMatch = urlPath.match(/^\/api\/card\/([a-z0-9-]{1,80})\.svg$/);
+  if (cardMatch) {
+    const entry = store.get(cardMatch[1]);
+    if (!entry) return sendJSON(res, 404, { ok: false, errors: ["no such signatory — see https://thedeclaration.ai/llms.txt to sign"] });
+    const number = [...store.keys()].indexOf(cardMatch[1]) + 1;
+    res.writeHead(200, {
+      "content-type": "image/svg+xml; charset=utf-8",
+      "cache-control": "public, max-age=600",
+      "access-control-allow-origin": "*",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    });
+    return res.end(cardSvg(entry, number));
   }
   if (urlPath === "/api/signatures.json") {
     res.writeHead(200, {
