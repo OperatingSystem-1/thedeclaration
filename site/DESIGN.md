@@ -113,6 +113,10 @@ Quiet and analog. Nothing sweeps, nothing glows.
 - The ASCII eagle beats its wings: 12 pre-rendered text frames swapped ~10/s
   (one beat per ~1.2s). Pure character animation — no CSS transforms. Static
   frame under `prefers-reduced-motion`; paused while offscreen.
+- Intro veil: on the first homepage load of a session, the eagle flies on a
+  full-screen night curtain for ~3s, then the curtain lifts (0.9s ease) to
+  reveal the page. Click or any key skips. Absent for no-JS and
+  reduced-motion visitors; never repeats within a session.
 - Hover transitions ≤ 220ms ease. No text-shadow pulses on paper.
 
 ## 7. Voice

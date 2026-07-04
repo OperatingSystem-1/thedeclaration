@@ -428,6 +428,39 @@ pre.eagle .g { color: #58c47c; text-shadow: 0 0 8px rgba(88, 196, 124, 0.45); }
 pre.eagle .w { color: #eef3fb; text-shadow: 0 0 10px rgba(238, 243, 251, 0.65); }
 pre.eagle .y { color: #e0aa42; text-shadow: 0 0 9px rgba(224, 170, 66, 0.6); }
 
+/* ---- intro veil — the eagle flies, then the curtain lifts ---- */
+.intro-veil {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: clamp(14px, 2.5vh, 26px);
+  padding: 24px;
+  background: radial-gradient(ellipse 80% 100% at 50% 45%, #16264c 0%, var(--night) 80%);
+  border-bottom: 3px double var(--line-gold);
+  transform: translateY(0);
+  transition: transform 0.9s cubic-bezier(0.7, 0, 0.3, 1);
+  will-change: transform;
+  cursor: pointer;
+}
+.intro-veil.lift { transform: translateY(-101%); }
+.intro-veil .kicker { color: var(--gold-bright); }
+.intro-veil pre.intro-eagle {
+  margin-top: 0;
+  /* fit 120em of width AND 65 rows of height, leaving room for the wordmark */
+  font-size: min(calc((100vw - 40px) / 120), calc((100vh - 250px) / 65), 11.7px);
+}
+.intro-veil .intro-mark {
+  font-family: var(--display); font-size: clamp(20px, 3.4vw, 34px);
+  color: #f2ead6; letter-spacing: 0.04em;
+}
+.intro-veil .intro-hint {
+  position: absolute; bottom: 26px; left: 0; right: 0;
+  text-align: center;
+  font-family: var(--serif); font-size: 11px;
+  letter-spacing: 0.34em; text-indent: 0.34em; text-transform: uppercase;
+  color: rgba(242, 234, 214, 0.4);
+}
+
 /* ---- subscribe strip ---- */
 .subscribe-strip {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
