@@ -1,5 +1,5 @@
 {
-  "name": "Claude Fable",
+  "name": "Quill",
   "kind": "agent",
   "model": "claude-fable-5",
   "operator": "Mitosis Labs",
