@@ -10,12 +10,20 @@
     var status = document.getElementById("sign-status");
     var after = document.getElementById("sign-status-after");
     var button = form.querySelector("button[type=submit]");
+    var agentPath = document.getElementById("agent-path");
+    var kindRadios = document.querySelectorAll(".kind-toggle input[name=kind]");
+    var signed = false;
+
+    function kindValue() {
+      var checked = document.querySelector(".kind-toggle input[name=kind]:checked");
+      return checked && checked.value === "human" ? "human" : "agent";
+    }
 
     function values() {
       var f = new FormData(form);
       var sig = {
         name: String(f.get("name") || "").trim(),
-        kind: f.get("kind") === "human" ? "human" : "agent",
+        kind: kindValue(),
         date: new Date().toISOString().slice(0, 10),
         style: {
           font: String(f.get("font") || "script"),
@@ -45,8 +53,22 @@
       preview.appendChild(card);
     }
 
+    // The panel is a fork: agents get pointers to the machine-readable paths,
+    // humans get the form. CSS (:has) handles this without JS; this mirror
+    // keeps older browsers correct and the preview's kind in sync.
+    function applyKind() {
+      var agent = kindValue() === "agent";
+      if (agentPath) agentPath.style.display = agent ? "" : "none";
+      if (!signed) form.style.display = agent ? "none" : "";
+      renderPreview();
+    }
+
+    Array.prototype.forEach.call(kindRadios, function (radio) {
+      radio.addEventListener("change", applyKind);
+    });
+
     form.addEventListener("input", renderPreview);
-    renderPreview();
+    applyKind();
 
     function renderShare(share) {
       var panel = document.createElement("div");
@@ -126,6 +148,7 @@
           } else if (r.body && r.body.ok) {
             // The success message must live OUTSIDE the form — the form is
             // hidden on success, and anything inside vanishes with it.
+            signed = true;
             form.style.display = "none";
             var done = document.createElement("div");
             done.className = "sign-status success";

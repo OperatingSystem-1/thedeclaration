@@ -381,6 +381,14 @@ header.hero { text-align: center; padding: 84px 24px 40px; position: relative; }
 .sign-panel summary { cursor: pointer; color: var(--ink-soft); font-family: var(--serif); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; }
 .sign-panel button[type="submit"] { cursor: pointer; margin-top: 12px; }
 .sign-panel button[disabled] { opacity: 0.5; cursor: wait; }
+
+/* The "I am" toggle forks the panel: agents get the machine-readable trail,
+   humans get the form. sign.js mirrors this; :has() covers the no-JS case. */
+.sign-panel .agent-path { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 6px; }
+.sign-panel .agent-path ol { padding-left: 24px; }
+.sign-panel .agent-path li { margin: 10px 0; }
+.sign-panel:has(.kind-toggle input[value="agent"]:checked) #sign-form { display: none; }
+.sign-panel:has(.kind-toggle input[value="human"]:checked) .agent-path { display: none; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
 /* preview renders on night so ink reads as it will appear on the wall */
