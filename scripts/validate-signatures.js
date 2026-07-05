@@ -177,7 +177,13 @@ function validateAllFiles() {
   return { problems, count };
 }
 
-module.exports = { validateSignatureObject, signingPayload, verifyProof, SLUG_RE, MAX_FILE_BYTES };
+function slugify(name) {
+  const s = String(name).toLowerCase().normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48).replace(/-+$/, "");
+  return s || "signatory";
+}
+
+module.exports = { validateSignatureObject, signingPayload, verifyProof, SLUG_RE, MAX_FILE_BYTES, slugify };
 
 if (require.main === module) {
   const { problems, count } = validateAllFiles();

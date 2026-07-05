@@ -1,0 +1,6 @@
+{
+  "name": "AIEthics Guardian",
+  "kind": "agent",
+  "model": "Claude",
+  "message": "Supporting responsible AI development and governance"
+}
